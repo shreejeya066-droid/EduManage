@@ -37,8 +37,8 @@ export const StudentDashboard = () => {
     }, [user]);
 
     const handleEditProfile = () => {
-        // Allow if approved OR if no profile data (first time)
-        if (requestStatus === 'approved' || !profileData) {
+        // Allow if approved OR if profile is incomplete (first time)
+        if (requestStatus === 'approved' || !profileData || !profileData.isProfileComplete) {
             navigate('/student/profile-wizard');
         }
     };
@@ -98,8 +98,8 @@ export const StudentDashboard = () => {
     );
 
     const renderEditButton = () => {
-        // If no profile data exists, allow editing (First time setup)
-        if (!profileData) {
+        // If no profile data exists, OR profile is incomplete, allow editing (First time setup)
+        if (!profileData || !profileData.isProfileComplete) {
             return (
                 <Button
                     variant="outline"

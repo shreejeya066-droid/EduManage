@@ -160,7 +160,8 @@ export const WizardContainer = () => {
     const handleSubmit = () => {
         console.log('Form Submitted:', formData);
         const key = user ? `student_profile_${user.username}` : 'student_profile';
-        localStorage.setItem(key, JSON.stringify(formData));
+        const finalData = { ...formData, isProfileComplete: true };
+        localStorage.setItem(key, JSON.stringify(finalData));
 
         // LOCK PROFILE AFTER UPDATE
         // We do this by updating the request status to 'completed' or removing it, 
