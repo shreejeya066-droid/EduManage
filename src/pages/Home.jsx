@@ -1,0 +1,86 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { GraduationCap, Users, ShieldCheck } from 'lucide-react';
+
+export const Home = () => {
+    const navigate = useNavigate();
+
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-purple-100 p-4">
+            <div className="mb-8 text-center">
+                <h1 className="text-4xl font-extrabold tracking-tight text-indigo-900 sm:text-5xl">
+                    EduMana<span className="text-indigo-600">ge</span>
+                </h1>
+                <p className="mt-4 text-lg text-gray-600">
+                    Student-Teacher Data Management & Analysis System
+                </p>
+            </div>
+
+            <Card className="w-full max-w-4xl p-8 shadow-2xl backdrop-blur-sm bg-white/80">
+                <h2 className="text-2xl font-semibold text-center text-gray-800 mb-8">Select Your Role</h2>
+
+                <div className="grid gap-6 md:grid-cols-3">
+                    {/* Student Login */}
+                    <div className="group relative rounded-xl border-2 border-transparent bg-white p-6 shadow-sm transition-all hover:border-indigo-500 hover:shadow-lg">
+                        <div className="flex flex-col items-center gap-4 text-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+                                <GraduationCap className="h-8 w-8" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Student</h3>
+                                <p className="text-sm text-gray-500">Access your dashboard & profile</p>
+                            </div>
+                            <Button
+                                className="w-full mt-2"
+                                onClick={() => navigate('/login')}
+                            >
+                                Student Login
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Teacher Login - Disabled */}
+                    <div className="group relative rounded-xl border bg-gray-50 p-6 opacity-75 grayscale transition-all">
+                        <div className="flex flex-col items-center gap-4 text-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                                <Users className="h-8 w-8" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-700">Teacher</h3>
+                                <p className="text-sm text-gray-500">Currently Disabled</p>
+                            </div>
+                            <Button disabled variant="secondary" className="w-full mt-2">
+                                Unified Login
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Admin Login */}
+                    <div className="group relative rounded-xl border-2 border-transparent bg-white p-6 shadow-sm transition-all hover:border-purple-500 hover:shadow-lg">
+                        <div className="flex flex-col items-center gap-4 text-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-purple-600 transition-colors group-hover:bg-purple-600 group-hover:text-white">
+                                <ShieldCheck className="h-8 w-8" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Admin</h3>
+                                <p className="text-sm text-gray-500">System Management</p>
+                            </div>
+                            <Button
+                                className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
+                                onClick={() => navigate('/admin/login')}
+                            >
+                                Admin Login
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* <div className="mt-8 text-center text-xs text-blue-400">
+                    <p>For demonstration purposes, please use the Unified Student Login button.</p>
+                </div> */}
+            </Card>
+        </div>
+    );
+};
