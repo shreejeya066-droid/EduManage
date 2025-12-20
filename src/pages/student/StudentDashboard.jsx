@@ -27,8 +27,6 @@ export const StudentDashboard = () => {
             }
 
             // Check Permission Status
-            // We use a mock Store for requests: 'profile_requests'
-            // Structure: { [username]: { status: 'pending' | 'approved' | 'rejected', ... } }
             const requests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
             const userRequest = requests[user.username];
 
@@ -39,8 +37,8 @@ export const StudentDashboard = () => {
     }, [user]);
 
     const handleEditProfile = () => {
-        // Only allow if approved
-        if (requestStatus === 'approved') {
+        // Allow if approved OR if no profile data (first time)
+        if (requestStatus === 'approved' || !profileData) {
             navigate('/student/profile-wizard');
         }
     };
@@ -100,6 +98,20 @@ export const StudentDashboard = () => {
     );
 
     const renderEditButton = () => {
+        // If no profile data exists, allow editing (First time setup)
+        if (!profileData) {
+            return (
+                <Button
+                    variant="outline"
+                    className="h-auto py-6 sm:py-8 flex-col gap-2 text-lg hover:shadow-md transition-all border-green-200 hover:border-green-500 hover:text-green-600"
+                    onClick={handleEditProfile}
+                >
+                    <Edit className="h-8 w-8" />
+                    Complete Profile
+                </Button>
+            );
+        }
+
         if (requestStatus === 'approved') {
             return (
                 <Button
@@ -123,7 +135,6 @@ export const StudentDashboard = () => {
                 </Button>
             );
         } else {
-            // None or Rejected (if rejected, they can request again maybe? or show rejected)
             return (
                 <Button
                     variant="outline"
