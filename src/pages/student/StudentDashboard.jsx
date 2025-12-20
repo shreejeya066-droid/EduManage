@@ -192,7 +192,13 @@ export const StudentDashboard = () => {
                 </Button>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-4">
+                <Button variant="ghost" size="sm" onClick={() => {
+                    localStorage.clear();
+                    window.location.reload();
+                }} className="text-red-500 hover:text-red-700">
+                    <Trash2 className="mr-2 h-4 w-4" /> Reset Demo Data
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleChangePassword} className="text-gray-500 hover:text-indigo-600">
                     <Key className="mr-2 h-4 w-4" /> Change Password
                 </Button>
