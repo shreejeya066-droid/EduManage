@@ -279,6 +279,14 @@ export const StudentDashboard = () => {
                 onClose={() => setIsEditModalOpen(false)}
                 onSubmit={handleRequestUpdate}
             />
+
+            <div className="fixed bottom-4 left-4 bg-black/80 text-white p-4 z-50 text-xs rounded shadow-lg max-w-sm overflow-auto">
+                <strong>DEBUG INFO:</strong><br />
+                Has Profile: {profileData ? 'Yes' : 'No'} <br />
+                Is Complete: {String(profileData?.isProfileComplete)} <br />
+                Req Status: {requestStatus} <br />
+                User: {user?.username}
+            </div>
         </div>
     );
 };
