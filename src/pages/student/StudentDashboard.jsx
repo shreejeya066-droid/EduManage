@@ -98,8 +98,8 @@ export const StudentDashboard = () => {
     );
 
     const renderEditButton = () => {
-        // If no profile data exists, OR profile is incomplete, allow editing (First time setup)
-        if (!profileData || !profileData.isProfileComplete) {
+        // If no profile data exists, OR profile is incomplete, OR critical data like course is missing
+        if (!profileData || !profileData.isProfileComplete || !profileData.course) {
             return (
                 <Button
                     variant="outline"
