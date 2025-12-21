@@ -33,7 +33,7 @@ export const AdminProfile = () => {
                 </div>
             </div>
 
-            <Card className="p-8">
+            <Card className="p-4 sm:p-8">
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                     <div className="flex flex-col items-center gap-4">
                         <div className="h-32 w-32 rounded-full bg-purple-100 flex items-center justify-center text-4xl font-bold text-purple-600 border-4 border-white shadow-lg">

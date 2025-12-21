@@ -81,7 +81,7 @@ export const AdminDashboard = () => {
 
             {/* Recent Activity / Quick Actions Section */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card className="p-6">
+                <Card className="p-4 sm:p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">System Notices</h3>
                     <div className="space-y-4">
                         <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
@@ -99,11 +99,11 @@ export const AdminDashboard = () => {
                     </div>
                 </Card>
 
-                <Card className="p-6">
+                <Card className="p-4 sm:p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Setup</h3>
                     <p className="text-sm text-gray-500 mb-4">Common administrative tasks available for quick access.</p>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button className="p-4 text-left rounded-lg border border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-all">
                             <span className="block font-medium text-gray-900">Add New Student</span>
                             <span className="text-xs text-gray-500">Single entry enrollment</span>

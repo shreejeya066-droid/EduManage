@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { User, Edit, Key, LogOut, ChevronDown, ChevronUp, FileText, Lock, Clock } from 'lucide-react';
+import { User, Edit, Key, LogOut, ChevronDown, ChevronUp, FileText, Lock, Clock, Trash2 } from 'lucide-react';
 import { RequestUpdateModal } from '../../components/student/RequestUpdateModal';
 
 export const StudentDashboard = () => {
@@ -74,9 +74,9 @@ export const StudentDashboard = () => {
     };
 
     const InfoRow = ({ label, value }) => (
-        <div className="grid grid-cols-3 border-b py-2 last:border-0">
+        <div className="flex flex-col sm:grid sm:grid-cols-3 border-b py-2 last:border-0 gap-1 sm:gap-0">
             <span className="font-medium text-gray-500">{label}</span>
-            <span className="col-span-2 text-gray-900 font-medium break-words">{value || '-'}</span>
+            <span className="sm:col-span-2 text-gray-900 font-medium break-words">{value || '-'}</span>
         </div>
     );
 
@@ -238,7 +238,7 @@ export const StudentDashboard = () => {
                         <div className="mt-4 border-t pt-4">
                             <h4 className="font-semibold text-gray-700 mb-3">Semester Performance</h4>
                             {[1, 2, 3, 4, 5, 6].map(sem => (
-                                <div key={sem} className="grid grid-cols-3 border-b py-2 text-sm">
+                                <div key={sem} className="flex flex-col sm:grid sm:grid-cols-3 border-b py-2 text-sm gap-1 sm:gap-0">
                                     <span className="text-gray-600">Semester {sem}</span>
                                     <span className="font-medium">GPA: {profileData[`sem${sem}_cgpa`] || '-'}</span>
                                     <span className="flex items-center text-indigo-600">
@@ -280,13 +280,7 @@ export const StudentDashboard = () => {
                 onSubmit={handleRequestUpdate}
             />
 
-            <div className="fixed bottom-4 left-4 bg-black/80 text-white p-4 z-50 text-xs rounded shadow-lg max-w-sm overflow-auto">
-                <strong>DEBUG INFO:</strong><br />
-                Has Profile: {profileData ? 'Yes' : 'No'} <br />
-                Is Complete: {String(profileData?.isProfileComplete)} <br />
-                Req Status: {requestStatus} <br />
-                User: {user?.username}
-            </div>
+
         </div>
     );
-};
+}; 

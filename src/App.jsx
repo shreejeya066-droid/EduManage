@@ -6,7 +6,10 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRouter />
+        <div className="min-h-screen bg-gray-50 text-gray-900">
+          {/* Imported ErrorBoundary inside the component or at top level */}
+          <AppRouter />
+        </div>
       </AuthProvider>
     </BrowserRouter>
   );

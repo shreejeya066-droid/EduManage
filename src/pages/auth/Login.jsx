@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const Login = () => {
     const [username, setUsername] = useState('');
@@ -16,6 +17,8 @@ export const Login = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [createPwdError, setCreatePwdError] = useState(null);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const { login, checkUserStatus, registerStudent, allowedYears } = useAuth();
     const navigate = useNavigate();
@@ -103,10 +106,26 @@ export const Login = () => {
 
     const handleCreatePassword = () => {
         setCreatePwdError(null);
+
+        // Regex: At least 1 Uppercase, 1 Digit, 1 Special Char, and Max 8 characters
+        // allow any characters as long as requirements are met
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{1,8}$/;
+
         if (!newPassword || !confirmPassword) {
             setCreatePwdError('Please fill all fields.');
             return;
         }
+
+        if (newPassword.length > 8) {
+            setCreatePwdError('Password must be 8 characters or less.');
+            return;
+        }
+
+        if (!passwordRegex.test(newPassword)) {
+            setCreatePwdError('Password must contain at least 1 uppercase letter, 1 digit, and 1 special character.');
+            return;
+        }
+
         if (newPassword !== confirmPassword) {
             setCreatePwdError('Passwords do not match.');
             return;
@@ -116,16 +135,16 @@ export const Login = () => {
         const result = registerStudent(username, newPassword);
         if (result.success) {
             setIsCreatePasswordOpen(false);
-            // Redirect to dashboard or profile setup
             navigate('/student/dashboard');
         } else {
             setCreatePwdError('Failed to create password.');
         }
     };
 
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-            <Card className="w-full max-w-md p-6 bg-white shadow-xl">
+            <Card className="w-full max-w-md p-4 sm:p-6 bg-white shadow-xl">
                 <div className="mb-6 text-center">
                     <h1 className="text-3xl font-bold text-indigo-600">Student Login</h1>
                     <p className="text-gray-500 mt-2">Enter your credentials to access the portal</p>
@@ -199,15 +218,35 @@ export const Login = () => {
                         <div className="space-y-2">
                             <Input
                                 label="New Password"
-                                type="password"
+                                type={showNewPassword ? "text" : "password"}
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
+                                maxLength={8}
+                                suffix={
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                                    >
+                                        {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
+                                }
                             />
                             <Input
                                 label="Confirm Password"
-                                type="password"
+                                type={showConfirmPassword ? "text" : "password"}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
+                                maxLength={8}
+                                suffix={
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
+                                }
                             />
                         </div>
                         {createPwdError && (
