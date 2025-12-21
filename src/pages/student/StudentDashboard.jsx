@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { User, Edit, Key, LogOut, ChevronDown, ChevronUp, FileText, Lock, Clock, Trash2 } from 'lucide-react';
-import { RequestUpdateModal } from '../../components/student/RequestUpdateModal';
+import { User, FileText, CheckCircle, Clock, Bell } from 'lucide-react';
 
 export const StudentDashboard = () => {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
+    const { user } = useAuth();
     const [profileData, setProfileData] = useState(null);
-    const [showProfile, setShowProfile] = useState(false);
-
-    // Permission State
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [requestStatus, setRequestStatus] = useState('none'); // 'none', 'pending', 'approved', 'rejected'
+    const [requestStatus, setRequestStatus] = useState('none');
 
     useEffect(() => {
         if (user) {
@@ -26,261 +18,112 @@ export const StudentDashboard = () => {
                 setProfileData(null);
             }
 
-            // Check Permission Status
             const requests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
             const userRequest = requests[user.username];
-
             if (userRequest) {
                 setRequestStatus(userRequest.status);
             }
         }
     }, [user]);
 
-    const handleEditProfile = () => {
-        // Allow if approved OR if profile is incomplete (first time)
-        if (requestStatus === 'approved' || !profileData || !profileData.isProfileComplete) {
-            navigate('/student/profile-wizard');
-        }
-    };
-
-    const handleRequestUpdate = ({ reason, fields }) => {
-        if (!user) return;
-
-        const newRequest = {
-            username: user.username,
-            name: user.name || (profileData ? `${profileData.firstName} ${profileData.lastName}` : 'Student'),
-            reason,
-            fields,
-            status: 'pending',
-            date: new Date().toISOString()
-        };
-
-        const requests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
-        requests[user.username] = newRequest;
-        localStorage.setItem('profile_requests', JSON.stringify(requests));
-
-        setRequestStatus('pending');
-        setIsEditModalOpen(false);
-        alert("Update request submitted successfully! Pending Admin Approval.");
-    };
-
-    const handleChangePassword = () => {
-        navigate('/change-password');
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
-    const InfoRow = ({ label, value }) => (
-        <div className="flex flex-col sm:grid sm:grid-cols-3 border-b py-2 last:border-0 gap-1 sm:gap-0">
-            <span className="font-medium text-gray-500">{label}</span>
-            <span className="sm:col-span-2 text-gray-900 font-medium break-words">{value || '-'}</span>
-        </div>
-    );
-
-    const SectionToggle = ({ title, isActive, onClick, children }) => (
-        <div className="border rounded-lg mb-4 overflow-hidden bg-white shadow-sm">
-            <button
-                onClick={onClick}
-                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-            >
-                <span className="font-semibold text-gray-800">{title}</span>
-                {isActive ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
-            </button>
-            {isActive && (
-                <div className="p-4">
-                    {children}
-                </div>
-            )}
-        </div>
-    );
-
-    const renderEditButton = () => {
-        // If no profile data exists, OR profile is incomplete, OR critical data like course is missing
-        if (!profileData || !profileData.isProfileComplete || !profileData.course) {
-            return (
-                <Button
-                    variant="outline"
-                    className="h-auto py-6 sm:py-8 flex-col gap-2 text-lg hover:shadow-md transition-all border-green-200 hover:border-green-500 hover:text-green-600"
-                    onClick={handleEditProfile}
-                >
-                    <Edit className="h-8 w-8" />
-                    Complete Profile
-                </Button>
-            );
-        }
-
-        if (requestStatus === 'approved') {
-            return (
-                <Button
-                    variant="outline"
-                    className="h-auto py-6 sm:py-8 flex-col gap-2 text-lg hover:shadow-md transition-all border-green-200 hover:border-green-500 hover:text-green-600"
-                    onClick={handleEditProfile}
-                >
-                    <Edit className="h-8 w-8" />
-                    Edit Profile
-                </Button>
-            );
-        } else if (requestStatus === 'pending') {
-            return (
-                <Button
-                    variant="outline"
-                    disabled
-                    className="h-auto py-6 sm:py-8 flex-col gap-2 text-lg border-yellow-200 bg-yellow-50 text-yellow-600 opacity-80 cursor-not-allowed"
-                >
-                    <Clock className="h-8 w-8" />
-                    Request Pending
-                </Button>
-            );
-        } else {
-            return (
-                <Button
-                    variant="outline"
-                    className="h-auto py-6 sm:py-8 flex-col gap-2 text-lg hover:shadow-md transition-all border-indigo-200 hover:border-indigo-500 hover:text-indigo-600"
-                    onClick={() => setIsEditModalOpen(true)}
-                >
-                    <Lock className="h-8 w-8" />
-                    Request Update
-                </Button>
-            );
-        }
-    };
+    const stats = [
+        { label: 'Forms Submitted', value: profileData?.isProfileComplete ? '1' : '0', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
+        { label: 'Pending Requests', value: requestStatus === 'pending' ? '1' : '0', icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-100' },
+        { label: 'Approved Requests', value: requestStatus === 'approved' ? '1' : '0', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100' },
+        { label: 'Notifications', value: '0', icon: Bell, color: 'text-purple-600', bg: 'bg-purple-100' },
+    ];
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 p-4">
-            {/* Welcome Card */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-6">
-                        <div className="h-20 w-20 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border-2 border-white/50">
-                            <User className="h-10 w-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold">
-                                Welcome, {profileData?.firstName ? `${profileData.firstName} ${profileData.lastName || ''}` : 'Student'}!
-                            </h1>
-                            <p className="text-indigo-100 mt-1">
-                                {profileData?.course ? `${profileData.course} - ${profileData.department}` : 'Complete your profile to see details'}
-                            </p>
+        <div className="space-y-6">
+            {/* Welcome Banner */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border-2 border-white/50">
+                        <User className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold">
+                            {profileData?.isProfileComplete ? 'Welcome Back,' : 'Welcome,'} {profileData?.firstName ? profileData.firstName : 'Student'}!
+                        </h1>
+                        <div className="flex gap-3 mt-2 text-indigo-100">
+                            <span>{profileData?.rollNumber || 'No Roll Number'}</span>
+                            <span>•</span>
+                            <span>{profileData?.course || 'No Course'} - {profileData?.department || 'No Dept'}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button
-                    variant={showProfile ? "primary" : "outline"}
-                    className="h-auto py-6 sm:py-8 flex-col gap-2 text-lg hover:shadow-md transition-all"
-                    onClick={() => setShowProfile(!showProfile)}
-                >
-                    <User className="h-8 w-8" />
-                    {showProfile ? 'Hide Profile' : 'View Profile'}
-                </Button>
-
-                {renderEditButton()}
-
-                <Button
-                    variant="outline"
-                    className="h-auto py-6 sm:py-8 flex-col gap-2 text-lg hover:shadow-md transition-all border-red-200 hover:border-red-500 hover:text-red-600"
-                    onClick={handleLogout}
-                >
-                    <LogOut className="h-8 w-8" />
-                    Logout
-                </Button>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {stats.map((stat, idx) => (
+                    <Card key={idx} className="p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+                        <div className={`h-12 w-12 rounded-full flex items-center justify-center ${stat.bg}`}>
+                            <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                        </div>
+                    </Card>
+                ))}
             </div>
 
-            <div className="flex justify-end gap-4">
-                <Button variant="ghost" size="sm" onClick={() => {
-                    localStorage.clear();
-                    window.location.reload();
-                }} className="text-red-500 hover:text-red-700">
-                    <Trash2 className="mr-2 h-4 w-4" /> Reset Demo Data
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleChangePassword} className="text-gray-500 hover:text-indigo-600">
-                    <Key className="mr-2 h-4 w-4" /> Change Password
-                </Button>
-            </div>
-
-            {/* Profile Details View */}
-            {showProfile && profileData ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex justify-between items-center">
-                        <span>Student Profile Details</span>
-                        <span className="text-sm font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                            Status: {requestStatus === 'approved' ? 'Unlocked (Editing Allowed)' : 'Locked (Read-Only)'}
-                        </span>
-                    </h2>
-
-                    <SectionToggle title="1. Personal Information" isActive={true} onClick={() => { }}>
-                        <InfoRow label="Full Name" value={`${profileData.firstName} ${profileData.lastName}`} />
-                        <InfoRow label="Date of Birth" value={profileData.dob} />
-                        <InfoRow label="Gender" value={profileData.gender} />
-                        <InfoRow label="Blood Group" value={profileData.bloodGroup} />
-                        <InfoRow label="Nationality" value={profileData.nationality} />
-                        <InfoRow label="Parent's Name" value={`${profileData.fatherName} / ${profileData.motherName}`} />
-                    </SectionToggle>
-
-                    <SectionToggle title="2. Contact Details" isActive={true} onClick={() => { }}>
-                        <InfoRow label="Mobile" value={profileData.mobile} />
-                        <InfoRow label="Email" value={profileData.email} />
-                        <InfoRow label="Address" value={profileData.address} />
-                    </SectionToggle>
-
-                    <SectionToggle title="3. Academic Details" isActive={true} onClick={() => { }}>
-                        <InfoRow label="Course" value={profileData.course} />
-                        <InfoRow label="Department" value={profileData.department} />
-                        <InfoRow label="Roll Number" value={profileData.rollNumber} />
-
-                        {/* Semester Performance Subsection */}
-                        <div className="mt-4 border-t pt-4">
-                            <h4 className="font-semibold text-gray-700 mb-3">Semester Performance</h4>
-                            {[1, 2, 3, 4, 5, 6].map(sem => (
-                                <div key={sem} className="flex flex-col sm:grid sm:grid-cols-3 border-b py-2 text-sm gap-1 sm:gap-0">
-                                    <span className="text-gray-600">Semester {sem}</span>
-                                    <span className="font-medium">GPA: {profileData[`sem${sem}_cgpa`] || '-'}</span>
-                                    <span className="flex items-center text-indigo-600">
-                                        {profileData[`sem${sem}_file`] ? (
-                                            <><FileText className="h-4 w-4 mr-1" /> File Uploaded</>
-                                        ) : <span className="text-gray-400">No Sheet</span>}
-                                    </span>
+            {/* Recent Activity Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <Card className="p-6 h-full">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
+                        <div className="space-y-4">
+                            {requestStatus === 'pending' && (
+                                <div className="flex items-start gap-4 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                                    <Clock className="h-5 w-5 text-yellow-600 mt-0.5" />
+                                    <div>
+                                        <p className="font-medium text-yellow-800">Profile Update Requested</p>
+                                        <p className="text-sm text-yellow-700">Your request is awaiting admin approval.</p>
+                                        <p className="text-xs text-yellow-500 mt-1">Just now</p>
+                                    </div>
                                 </div>
-                            ))}
+                            )}
+                            {requestStatus === 'approved' && (
+                                <div className="flex items-start gap-4 p-3 bg-green-50 rounded-lg border border-green-100">
+                                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                                    <div>
+                                        <p className="font-medium text-green-800">Profile Update Approved</p>
+                                        <p className="text-sm text-green-700">You can now edit your profile details.</p>
+                                        <p className="text-xs text-green-500 mt-1">{new Date().toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {(requestStatus === 'none' || !requestStatus) && (
+                                <div className="text-gray-500 text-center py-8">
+                                    No recent activity to show.
+                                </div>
+                            )}
                         </div>
-
-                        <div className="mt-4 pt-2">
-                            <InfoRow label="Overall CGPA" value={profileData.cgpa} />
-                            <InfoRow label="Backlogs" value={profileData.backlogs} />
-                        </div>
-                    </SectionToggle>
-
-                    <SectionToggle title="4. Technical Skills" isActive={true} onClick={() => { }}>
-                        <InfoRow label="Languages" value={profileData.programmingLanguages} />
-                        <InfoRow label="Tools" value={profileData.tools} />
-                        <InfoRow label="Certifications" value={profileData.certifications} />
-                    </SectionToggle>
-
-                    <SectionToggle title="Career & Others" isActive={true} onClick={() => { }}>
-                        <InfoRow label="Higher Studies?" value={profileData.higherStudies} />
-                        <InfoRow label="Interested Domain" value={profileData.interestedDomain} />
-                        <InfoRow label="Preferred Location" value={profileData.prefLocation} />
-                    </SectionToggle>
+                    </Card>
                 </div>
-            ) : showProfile && !profileData ? (
-                <Card className="p-8 text-center text-gray-500">
-                    <p>No profile data found. Please Request Update to add details.</p>
-                </Card>
-            ) : null}
 
-            <RequestUpdateModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                onSubmit={handleRequestUpdate}
-            />
-
-
+                <div>
+                    <Card className="p-6 h-full bg-indigo-50 border-indigo-100">
+                        <h3 className="text-lg font-bold text-indigo-900 mb-4">Quick Tips</h3>
+                        <ul className="space-y-3 text-sm text-indigo-800">
+                            <li className="flex gap-2">
+                                <span className="font-bold">•</span>
+                                Keep your profile updated for better placement opportunities.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="font-bold">•</span>
+                                Check notifications regularly for college announcements.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="font-bold">•</span>
+                                Upload all semester marks sheets on time.
+                            </li>
+                        </ul>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }; 

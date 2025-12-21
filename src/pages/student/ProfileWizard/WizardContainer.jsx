@@ -46,7 +46,7 @@ export const WizardContainer = () => {
             programmingLanguages: '', technicalSkills: '', tools: '', certifications: '', certProof: '',
             internshipCompany: '', internshipType: '', internshipDuration: '', internshipDomain: '', internshipCert: '',
             // Step 5
-            sports: '', clubs: '', achievements: '', events: '', otherActivities: '',
+            sports: '', clubs: '', achievements: '', events: '', otherActivities: '', hobbies: [],
             // Step 6 (Career)
             higherStudies: 'No', higherStudiesDetails: '', placementWillingness: 'Yes', interestedDomain: '', prefLocation: ''
         };

@@ -200,6 +200,12 @@ export const Login = () => {
                     </Button>
                 </form>
 
+                <div className="mt-6 text-center border-t pt-4">
+                    <Link to="/" className="text-sm font-medium text-gray-600 hover:text-indigo-600 flex items-center justify-center gap-2 transition-colors">
+                        ← Back to Home
+                    </Link>
+                </div>
+
                 {/* First Time Password Creation Modal */}
                 <Modal
                     isOpen={isCreatePasswordOpen}

@@ -302,9 +302,9 @@ export const StudentManagement = () => {
                                 Profile setup incomplete.
                             </div>
                         )}
-                        <div className="flex justify-end pt-4">
+                        {/* <div className="flex justify-end pt-4">
                             <Button variant="secondary" onClick={() => setSelectedStudent(null)}>Close</Button>
-                        </div>
+                        </div> */}
                     </div>
                 )}
             </Modal>

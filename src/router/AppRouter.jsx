@@ -9,6 +9,7 @@ import { ChangePassword } from '../pages/auth/ChangePassword';
 
 // Student Component
 import { StudentDashboard } from '../pages/student/StudentDashboard';
+import { StudentProfile } from '../pages/student/StudentProfile';
 import { WizardContainer } from '../pages/student/ProfileWizard/WizardContainer';
 
 // Teacher Components
@@ -65,7 +66,7 @@ export const AppRouter = () => {
             <Route element={<ProtectedRoute allowedRoles={['student', 'teacher']}><MainLayout /></ProtectedRoute>}>
                 {/* Student Routes */}
                 <Route path="/student/dashboard" element={<ProtectedRoute allowedRoles={['student']}><StudentDashboard /></ProtectedRoute>} />
-                <Route path="/student/profile" element={<ProtectedRoute allowedRoles={['student']}><StudentDashboard /></ProtectedRoute>} />
+                <Route path="/student/profile" element={<ProtectedRoute allowedRoles={['student']}><StudentProfile /></ProtectedRoute>} />
                 <Route path="/student/profile-wizard" element={<ProtectedRoute allowedRoles={['student']}><WizardContainer /></ProtectedRoute>} />
 
                 {/* Teacher Routes */}
