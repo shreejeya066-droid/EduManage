@@ -1,10 +1,11 @@
 import React from 'react';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 import { Users, FileText, TrendingUp, AlertCircle } from 'lucide-react';
 
 export const TeacherDashboard = () => {
-    const { getAllUsers } = useAuth();
+    const { getAllUsers, user } = useAuth();
     const students = getAllUsers().filter(u => u.role === 'student');
     const totalStudents = students.length;
     const avgAttendance = Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / totalStudents);
@@ -15,9 +16,13 @@ export const TeacherDashboard = () => {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h2>
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h2>
+                    <p className="text-gray-500">Welcome, {user?.name || 'Teacher'}</p>
+                </div>
             </div>
 
+            {/* Metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="hover:shadow-md transition-shadow">
                     <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -48,9 +53,53 @@ export const TeacherDashboard = () => {
                         <h3 className="text-sm font-medium text-gray-500">Pending Queries</h3>
                         <AlertCircle className="h-4 w-4 text-gray-500" />
                     </div>
-                    <div className="text-2xl font-bold text-amber-600">12</div>
+                    <div className="text-2xl font-bold text-amber-600">3</div>
                     <p className="text-xs text-gray-500">Requires attention</p>
                 </Card>
+            </div>
+
+            {/* Navigation Cards */}
+            <h3 className="text-xl font-semibold">Overview</h3>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <Link to="/teacher/students" className="block">
+                    <Card className="hover:bg-indigo-50 transition-colors cursor-pointer h-full flex flex-col items-center justify-center p-6 text-center space-y-2 border-indigo-100">
+                        <div className="p-3 bg-indigo-100 rounded-full text-indigo-600">
+                            <Users className="h-8 w-8" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">Student List</h3>
+                        <p className="text-sm text-gray-500">View and manage student details</p>
+                    </Card>
+                </Link>
+
+                <Link to="/teacher/analytics" className="block">
+                    <Card className="hover:bg-emerald-50 transition-colors cursor-pointer h-full flex flex-col items-center justify-center p-6 text-center space-y-2 border-emerald-100">
+                        <div className="p-3 bg-emerald-100 rounded-full text-emerald-600">
+                            <TrendingUp className="h-8 w-8" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">Analytics</h3>
+                        <p className="text-sm text-gray-500">View performance insights</p>
+                    </Card>
+                </Link>
+
+                <Link to="/teacher/notifications" className="block">
+                    <Card className="hover:bg-amber-50 transition-colors cursor-pointer h-full flex flex-col items-center justify-center p-6 text-center space-y-2 border-amber-100">
+                        <div className="p-3 bg-amber-100 rounded-full text-amber-600">
+                            <AlertCircle className="h-8 w-8" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                        <p className="text-sm text-gray-500">Recent updates & requests</p>
+                    </Card>
+                </Link>
+
+                <Link to="/teacher/profile" className="block">
+                    <Card className="hover:bg-blue-50 transition-colors cursor-pointer h-full flex flex-col items-center justify-center p-6 text-center space-y-2 border-blue-100">
+                        <div className="p-3 bg-blue-100 rounded-full text-blue-600">
+                            <FileText className="h-8 w-8" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">My Profile</h3>
+                        <p className="text-sm text-gray-500">View and edit personal info</p>
+                    </Card>
+                </Link>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">

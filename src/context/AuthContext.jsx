@@ -7,6 +7,8 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
     // We'll mimic persistence with simple localStorage for the demo duration
     // In a real app, this would be more robust.
 
@@ -22,6 +24,7 @@ export const AuthProvider = ({ children }) => {
         if (storedYears) {
             setAllowedYears(JSON.parse(storedYears));
         }
+        setLoading(false);
     }, []);
 
     const updateAllowedYears = (years) => {
@@ -166,7 +169,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, updateProfile, changePassword, checkUserStatus, registerStudent, allowedYears, updateAllowedYears, getAllUsers, deleteUser }}>
+        <AuthContext.Provider value={{ user, login, logout, updateProfile, changePassword, checkUserStatus, registerStudent, allowedYears, updateAllowedYears, getAllUsers, deleteUser, loading }}>
             {children}
         </AuthContext.Provider>
     );

@@ -41,18 +41,21 @@ export const Home = () => {
                         </div>
                     </div>
 
-                    {/* Teacher Login - Disabled */}
-                    <div className="group relative rounded-xl border bg-gray-50 p-6 opacity-75 grayscale transition-all">
+                    {/* Teacher Login */}
+                    <div className="group relative rounded-xl border-2 border-transparent bg-white p-6 shadow-sm transition-all hover:border-indigo-500 hover:shadow-lg">
                         <div className="flex flex-col items-center gap-4 text-center">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
                                 <Users className="h-8 w-8" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-gray-700">Teacher</h3>
-                                <p className="text-sm text-gray-500">Currently Disabled</p>
+                                <h3 className="text-lg font-bold text-gray-900">Teacher</h3>
+                                <p className="text-sm text-gray-500">Faculty & Staff Login</p>
                             </div>
-                            <Button disabled variant="secondary" className="w-full mt-2">
-                                Unified Login
+                            <Button
+                                className="w-full mt-2"
+                                onClick={() => navigate('/teacher-login')}
+                            >
+                                Teacher Login
                             </Button>
                         </div>
                     </div>

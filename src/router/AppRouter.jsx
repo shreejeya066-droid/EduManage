@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MainLayout } from '../components/layout/MainLayout';
 import { Login } from '../pages/auth/Login';
+import { TeacherLogin } from '../pages/auth/TeacherLogin';
 import { ForgotPassword } from '../pages/auth/ForgotPassword';
 
 import { ChangePassword } from '../pages/auth/ChangePassword';
@@ -17,6 +18,9 @@ import { TeacherDashboard } from '../pages/teacher/TeacherDashboard';
 import { StudentList } from '../pages/teacher/StudentList';
 import { Analytics } from '../pages/teacher/Analytics';
 import { QueryInput } from '../pages/teacher/QueryInput';
+import { Notifications } from '../pages/teacher/Notifications';
+import { TeacherProfile } from '../pages/teacher/TeacherProfile';
+import { StudentDetailView } from '../pages/teacher/StudentDetailView';
 
 // Admin Components
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage';
@@ -40,6 +44,7 @@ export const AppRouter = () => {
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/teacher-login" element={<TeacherLogin />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Admin Authentication Routes */}
@@ -62,18 +67,22 @@ export const AppRouter = () => {
                 </Route>
             </Route>
 
-            {/* Student & Teacher Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['student', 'teacher']}><MainLayout /></ProtectedRoute>}>
-                {/* Student Routes */}
-                <Route path="/student/dashboard" element={<ProtectedRoute allowedRoles={['student']}><StudentDashboard /></ProtectedRoute>} />
-                <Route path="/student/profile" element={<ProtectedRoute allowedRoles={['student']}><StudentProfile /></ProtectedRoute>} />
-                <Route path="/student/profile-wizard" element={<ProtectedRoute allowedRoles={['student']}><WizardContainer /></ProtectedRoute>} />
+            {/* Student Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['student']} loginPath="/login"><MainLayout /></ProtectedRoute>}>
+                <Route path="/student/dashboard" element={<StudentDashboard />} />
+                <Route path="/student/profile" element={<StudentProfile />} />
+                <Route path="/student/profile-wizard" element={<WizardContainer />} />
+            </Route>
 
-                {/* Teacher Routes */}
-                <Route path="/teacher/dashboard" element={<ProtectedRoute allowedRoles={['teacher']}><TeacherDashboard /></ProtectedRoute>} />
-                <Route path="/teacher/students" element={<ProtectedRoute allowedRoles={['teacher']}><StudentList /></ProtectedRoute>} />
-                <Route path="/teacher/analytics" element={<ProtectedRoute allowedRoles={['teacher']}><Analytics /></ProtectedRoute>} />
-                <Route path="/teacher/query" element={<ProtectedRoute allowedRoles={['teacher']}><QueryInput /></ProtectedRoute>} />
+            {/* Teacher Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['teacher']} loginPath="/teacher-login"><MainLayout /></ProtectedRoute>}>
+                <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+                <Route path="/teacher/students" element={<StudentList />} />
+                <Route path="/teacher/students/:id" element={<StudentDetailView />} />
+                <Route path="/teacher/analytics" element={<Analytics />} />
+                <Route path="/teacher/notifications" element={<Notifications />} />
+                <Route path="/teacher/profile" element={<TeacherProfile />} />
+                <Route path="/teacher/query" element={<QueryInput />} />
             </Route>
 
             <Route path="*" element={<div>404 Not Found</div>} />

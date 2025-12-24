@@ -58,21 +58,31 @@ export const Login = () => {
         setError(null);
 
         if (!username) {
-            setError('Please enter your Roll Number.');
+            setError('Please enter your User ID or Roll Number.');
             return;
         }
 
-        // 1. Strict Validation
-        const validation = validateRollNumber(username);
-        if (!validation.valid) {
-            setError(validation.message);
-            return;
-        }
-
-        // 2. Check User Status
+        // 1. Check User Status First
         const status = checkUserStatus(username);
 
-        // 3. Smart Logic
+        // 2. Conditional Validation
+        if (status.exists && (status.role === 'teacher' || status.role === 'admin')) {
+            // Skip strict Roll Number regex for Teachers/Admins
+            if (!isPasswordVisible) {
+                setIsPasswordVisible(true);
+                return;
+            }
+        } else {
+            // For Students or Unknown users, apply strict format check
+            const validation = validateRollNumber(username);
+            if (!validation.valid) {
+                // If invalid format AND not found as teacher/admin -> Show error
+                setError(validation.message);
+                return;
+            }
+        }
+
+        // 3. Login Flow
         if (!status.exists) {
             // Case 1: First-time student -> Open Modal
             setIsCreatePasswordOpen(true);
@@ -90,7 +100,13 @@ export const Login = () => {
 
                 const result = login(username, password);
                 if (result.success) {
-                    navigate('/student/dashboard');
+                    if (result.role === 'teacher') {
+                        navigate('/teacher/dashboard');
+                    } else if (result.role === 'admin') {
+                        navigate('/admin/dashboard');
+                    } else {
+                        navigate('/student/dashboard');
+                    }
                 } else {
                     setError(result.message);
                 }
@@ -146,15 +162,15 @@ export const Login = () => {
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
             <Card className="w-full max-w-md p-4 sm:p-6 bg-white shadow-xl">
                 <div className="mb-6 text-center">
-                    <h1 className="text-3xl font-bold text-indigo-600">Student Login</h1>
+                    <h1 className="text-3xl font-bold text-indigo-600">Portal Login</h1>
                     <p className="text-gray-500 mt-2">Enter your credentials to access the portal</p>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-1">
                         <Input
-                            label="Roll Number"
-                            placeholder="e.g. 23BIT01"
+                            label="User ID / Roll Number"
+                            placeholder="e.g. 23BIT01 "
                             value={username}
                             onChange={(e) => setUsername(e.target.value.toUpperCase())}
                             disabled={isPasswordVisible}
@@ -165,7 +181,7 @@ export const Login = () => {
                                 onClick={handleBack}
                                 className="text-xs text-indigo-600 hover:text-indigo-800"
                             >
-                                Change Roll Number
+                                Change User ID
                             </button>
                         )}
                     </div>
@@ -200,7 +216,10 @@ export const Login = () => {
                     </Button>
                 </form>
 
-                <div className="mt-6 text-center border-t pt-4">
+                <div className="mt-6 text-center border-t pt-4 space-y-2">
+                    <p className="text-sm text-gray-600">
+
+                    </p>
                     <Link to="/" className="text-sm font-medium text-gray-600 hover:text-indigo-600 flex items-center justify-center gap-2 transition-colors">
                         ← Back to Home
                     </Link>

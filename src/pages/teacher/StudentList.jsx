@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { USERS } from '../../data/mockData';
 import { Search, Filter } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const StudentList = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -84,14 +85,16 @@ export const StudentList = () => {
                                 <TableCell>{student.grade}</TableCell>
                                 <TableCell>
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${student.attendance >= 90 ? 'bg-green-100 text-green-800' :
-                                            student.attendance >= 75 ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-red-100 text-red-800'
+                                        student.attendance >= 75 ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-red-100 text-red-800'
                                         }`}>
                                         {student.attendance}%
                                     </span>
                                 </TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="sm" className="text-indigo-600">View Details</Button>
+                                    <Link to={`/teacher/students/${student.username}`}>
+                                        <Button variant="ghost" size="sm" className="text-indigo-600">View Details</Button>
+                                    </Link>
                                 </TableCell>
                             </TableRow>
                         ))

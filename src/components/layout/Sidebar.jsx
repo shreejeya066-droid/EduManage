@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
     LayoutDashboard,
@@ -14,6 +14,19 @@ import { clsx } from 'clsx';
 
 export const Sidebar = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        const role = user?.role;
+        logout();
+        if (role === 'teacher') {
+            navigate('/teacher-login');
+        } else if (role === 'admin') {
+            navigate('/admin/login');
+        } else {
+            navigate('/login');
+        }
+    };
 
     const getLinks = () => {
         switch (user?.role) {
@@ -66,7 +79,7 @@ export const Sidebar = () => {
             </nav>
             <div className="border-t p-4">
                 <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
                 >
                     <LogOut className="h-4 w-4" />
