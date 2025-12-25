@@ -85,7 +85,7 @@ export const ChangePassword = () => {
         if (user?.role === 'admin') {
             navigate('/admin/dashboard');
         } else if (user?.role === 'teacher') {
-            navigate('/teacher/dashboard');
+            navigate('/teacher/profile', { state: { isNewProfile: true } });
         } else {
             navigate('/student/profile-wizard');
         }

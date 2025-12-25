@@ -32,10 +32,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('allowed_years', JSON.stringify(years));
     };
 
-    // Helper to get all users including runtime created ones
+    // Helper to get all users including runtime created ones, excluding deleted ones
     const getAllUsers = () => {
         const storedUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
-        return [...USERS, ...storedUsers];
+        const deletedUsers = JSON.parse(localStorage.getItem('deleted_users') || '[]');
+
+        const all = [...USERS, ...storedUsers];
+        return all.filter(u => !deletedUsers.includes(u.username));
     };
 
     const checkUserStatus = (username) => {
@@ -79,6 +82,13 @@ export const AuthProvider = ({ children }) => {
         const foundUser = allUsers.find(u => u.username === username && u.password === password);
 
         if (foundUser) {
+            // Check for Account Status (if property exists)
+            // Default to 'Active' if undefined for backward compatibility with mock data
+            // But for new Teacher flow, strict check.
+            if (foundUser.role === 'teacher' && foundUser.status && foundUser.status !== 'Active') {
+                return { success: false, message: 'Account is pending approval or disabled. Contact Administrator.' };
+            }
+
             // Create a session object (safe clone)
             const sessionUser = { ...foundUser };
 
@@ -157,12 +167,19 @@ export const AuthProvider = ({ children }) => {
     };
 
     const deleteUser = (username) => {
-        // 1. Remove from all_users
+        // 1. Remove from all_users (dynamic users)
         const storedUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
         const updatedUsers = storedUsers.filter(u => u.username !== username);
         localStorage.setItem('all_users', JSON.stringify(updatedUsers));
 
-        // 2. Remove profile data
+        // 2. Add to deleted_users list (to hide default users)
+        const deletedUsers = JSON.parse(localStorage.getItem('deleted_users') || '[]');
+        if (!deletedUsers.includes(username)) {
+            deletedUsers.push(username);
+            localStorage.setItem('deleted_users', JSON.stringify(deletedUsers));
+        }
+
+        // 3. Remove profile data
         localStorage.removeItem(`student_profile_${username}`);
 
         return true;

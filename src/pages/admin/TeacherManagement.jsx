@@ -28,16 +28,18 @@ export const TeacherManagement = () => {
     };
 
     const handleCreateTeacher = (formData) => {
-        const defaultPassword = 'password123';
-        const username = formData.staffId;
+        const defaultPassword = 'password123'; // Default logic
+        const username = formData.staffId; // Manually composed ID from form
 
         const newTeacher = {
-            id: username, // Use staffId as key
+            id: username,
             name: formData.fullName,
             role: 'teacher',
             username: username,
             password: defaultPassword,
-            isFirstLogin: true,
+            email: formData.email,
+            isFirstLogin: true, // Force password change
+            status: formData.status || 'Active', // Ensure Active status
             department: formData.department,
             subjects: formData.subjects
         };
@@ -62,13 +64,69 @@ export const TeacherManagement = () => {
 
     return (
         <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
+                <div className="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            🔐 Authorized Teacher Access
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                            Only admin-approved teaching and non-teaching staff can log in using a system-generated Teacher ID.
+                        </p>
+                    </div>
+                    <Button onClick={() => setIsCreateModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2">
+                        <Plus className="h-4 w-4" /> Add Teacher
+                    </Button>
+                </div>
+
+                {/* Admin Info Notice */}
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+                    <div className="flex">
+                        <div className="ml-3">
+                            <p className="text-sm text-amber-700">
+                                Adding a teacher creates a secure login ID. Teachers can log in only after admin approval and must create a new password on first login.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Authorized Teacher List (Chips) */}
+                <div>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                        Active Teacher IDs
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                        {teachers.length > 0 ? (
+                            teachers.map((teacher) => (
+                                <div
+                                    key={teacher.username}
+                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                >
+                                    {teacher.username}
+                                    <button
+                                        onClick={() => handleDelete(teacher.username)}
+                                        className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-indigo-200 text-indigo-400 hover:text-indigo-600 transition-colors"
+                                        title="Revoke Access"
+                                    >
+                                        <span className="sr-only">Remove {teacher.username}</span>
+                                        ×
+                                    </button>
+                                </div>
+                            ))
+                        ) : (
+                            <span className="text-sm text-gray-400 italic">No authorized teachers yet.</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Teacher Management</h2>
+                <h3 className="text-lg font-semibold text-gray-900">Teacher Directory</h3>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search..."
+                        placeholder="Search teachers..."
                         className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}

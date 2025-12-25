@@ -27,7 +27,11 @@ export const TeacherLogin = () => {
 
         if (result.success) {
             if (result.role === 'teacher') {
-                navigate('/teacher/dashboard');
+                if (result.isFirstLogin) {
+                    navigate('/change-password');
+                } else {
+                    navigate('/teacher/dashboard');
+                }
             } else if (result.role === 'admin') {
                 navigate('/admin/dashboard');
             } else {

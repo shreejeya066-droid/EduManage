@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +8,7 @@ import { User, Mail, BookOpen, Building } from 'lucide-react';
 
 export const TeacherProfile = () => {
     const { user, updateProfile } = useAuth();
+    const location = useLocation();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -16,6 +18,12 @@ export const TeacherProfile = () => {
         designation: 'Senior Lecturer',
         specialization: 'Software Engineering'
     });
+
+    useEffect(() => {
+        if (location.state?.isNewProfile) {
+            setIsEditing(true);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         if (user) {
