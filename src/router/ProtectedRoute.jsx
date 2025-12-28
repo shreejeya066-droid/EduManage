@@ -16,10 +16,22 @@ export const ProtectedRoute = ({ children, allowedRoles, loginPath = '/login' })
     }
 
     // First time login flow enforcement
-    // If first login, ONLY allow change-password or profile-setup (if legacy)
-    // New flow: login -> change-password -> profile-wizard
-    if (user.isFirstLogin && location.pathname !== '/change-password') {
-        return <Navigate to="/change-password" replace />;
+    if (user.isFirstLogin) {
+        // Teacher Flow: Change Password (handled externally or via flag?) -> Profile Setup
+        if (user.role === 'teacher') {
+            // If password is confirmed set (we can check a property if we added one to session, let's assume isFirstLogin is the main gate for Profile Setup now)
+            // The setupPassword fn sets passwordSet: true but keeps isFirstLogin: true.
+            // So if they are here, they need to complete profile.
+            if (location.pathname !== '/teacher/profile-setup') {
+                return <Navigate to="/teacher/profile-setup" replace />;
+            }
+        }
+        // Student Flow (Legacy) or Admin
+        else if (user.role === 'student' || user.role === 'admin') {
+            if (location.pathname !== '/change-password') {
+                return <Navigate to="/change-password" replace />;
+            }
+        }
     }
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {

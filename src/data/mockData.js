@@ -43,6 +43,16 @@ export const USERS = [
         department: 'Computer Science',
         year: '2023',
         isFirstLogin: false,
+    },
+    {
+        id: 'TEACHER_NEW',
+        name: 'New Faculty Member',
+        role: 'teacher',
+        username: 'new_teacher',
+        password: '', // No password initially
+        department: 'General Science',
+        isFirstLogin: true,
+        passwordSet: false, // Explicit flag for the new flow
     }
 ];
 

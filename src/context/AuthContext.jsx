@@ -32,23 +32,100 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('allowed_years', JSON.stringify(years));
     };
 
+    // Safe JSON parse helper
+    const safeParse = (key, fallback) => {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : fallback;
+        } catch (e) {
+            console.error(`Error parsing ${key} from localStorage`, e);
+            return fallback;
+        }
+    };
+
     // Helper to get all users including runtime created ones, excluding deleted ones
     const getAllUsers = () => {
-        const storedUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
-        const deletedUsers = JSON.parse(localStorage.getItem('deleted_users') || '[]');
+        const storedUsers = safeParse('all_users', []);
+        const deletedUsers = safeParse('deleted_users', []);
 
-        const all = [...USERS, ...storedUsers];
-        return all.filter(u => !deletedUsers.includes(u.username));
+        // Ensure storedUsers is an array
+        const validStoredUsers = Array.isArray(storedUsers) ? storedUsers : [];
+        const validDeletedUsers = Array.isArray(deletedUsers) ? deletedUsers : [];
+
+        const all = [...USERS, ...validStoredUsers];
+        return all.filter(u => !validDeletedUsers.includes(u.username));
     };
 
     const checkUserStatus = (username) => {
         const allUsers = getAllUsers();
-        const found = allUsers.find(u => u.username === username);
+        // Case-insensitive check for better UX
+        const found = allUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+        if (!found) return { exists: false };
+
         return {
-            exists: !!found,
-            hasPassword: !!found?.password, // In this mock, if they exist they have password, but logically separate
-            role: found?.role
+            exists: true,
+            hasPassword: !!found.password && found.password.length > 0,
+            passwordSet: found.passwordSet !== false, // Default to true if undefined
+            isFirstLogin: found.isFirstLogin,
+            role: found.role,
+            name: found.name,
+            department: found.department
         };
+    };
+
+    const setupPassword = (username, newPassword) => {
+        const allUsers = getAllUsers();
+        const userIndex = allUsers.findIndex(u => u.username === username);
+
+        if (userIndex === -1) return false;
+
+        const updatedUser = {
+            ...allUsers[userIndex],
+            password: newPassword,
+            passwordSet: true,
+            // Keep isFirstLogin: true until they complete profile? 
+            // Plan says: Redirect to Profile Completion. 
+            // Let's keep isFirstLogin true so if they drop off, they come back to a flow.
+            // But we need a way to distinguish "Needs Password" vs "Needs Profile".
+            // We'll rely on passwordSet=true check.
+        };
+
+        const newUsers = [...allUsers];
+        newUsers[userIndex] = updatedUser;
+
+        // Persist
+        localStorage.setItem('all_users', JSON.stringify(newUsers));
+
+        // Auto-login the user into session
+        setUser(updatedUser);
+        localStorage.setItem('app_user', JSON.stringify(updatedUser));
+
+        return true;
+    };
+
+    const completeProfile = (profileData) => {
+        if (!user) return false;
+
+        const updatedUser = {
+            ...user,
+            ...profileData,
+            isFirstLogin: false // Flow complete
+        };
+
+        // Update in "DB"
+        const allUsers = getAllUsers();
+        const userIndex = allUsers.findIndex(u => u.username === user.username);
+        if (userIndex !== -1) {
+            const newUsers = [...allUsers];
+            newUsers[userIndex] = updatedUser;
+            localStorage.setItem('all_users', JSON.stringify(newUsers));
+        }
+
+        // Update session
+        setUser(updatedUser);
+        localStorage.setItem('app_user', JSON.stringify(updatedUser));
+        return true;
     };
 
     const registerStudent = (username, password) => {
@@ -58,12 +135,7 @@ export const AuthProvider = ({ children }) => {
             role: 'student',
             username: username,
             password: password,
-            isFirstLogin: false, // They just set it, so treat as setup? Or flow defines next step? 
-            // "Student Role: After login, student can fill profile forms". 
-            // So isFirstLogin could be true to trigger profile wizard? 
-            // The existing mock data has isFirstLogin: true.
-            // Let's set it to false so they don't get "Change Password" screen again, 
-            // but we might need to route them to ProfileWizard.
+            isFirstLogin: false,
         };
 
         // Save to "DB"
@@ -82,30 +154,27 @@ export const AuthProvider = ({ children }) => {
         const foundUser = allUsers.find(u => u.username === username && u.password === password);
 
         if (foundUser) {
-            // Check for Account Status (if property exists)
-            // Default to 'Active' if undefined for backward compatibility with mock data
-            // But for new Teacher flow, strict check.
+            // Check for Account Status
             if (foundUser.role === 'teacher' && foundUser.status && foundUser.status !== 'Active') {
                 return { success: false, message: 'Account is pending approval or disabled. Contact Administrator.' };
             }
 
-            // Create a session object (safe clone)
+            // Create a session object
             const sessionUser = { ...foundUser };
 
-            // If we are strictly following "duplicate username & password (default credentials)" check
-            // We can also have a flag in the mock data, or just check if password === 'password'
-            // The requirement says "Login using a duplicate username & password (default credentials)."
-            // which implies checking if credentials match.
-
-            // Persist ONLY if not first login (optional, but good for UX)
-            // Actually, for this flow, we keep state in memory mostly, 
-            // but let's persist to survive refreshes which helps dev.
             setUser(sessionUser);
             localStorage.setItem('app_user', JSON.stringify(sessionUser));
-            return { success: true, isFirstLogin: sessionUser.isFirstLogin, role: sessionUser.role };
+
+            // Return extended info for routing logic
+            return {
+                success: true,
+                isFirstLogin: sessionUser.isFirstLogin,
+                role: sessionUser.role,
+                passwordSet: sessionUser.passwordSet !== false
+            };
         }
 
-        return { success: false, message: 'Invalid credentials' };
+        return { success: false, message: 'Incorrect password' };
     };
 
     const logout = () => {
@@ -166,6 +235,78 @@ export const AuthProvider = ({ children }) => {
         return true;
     };
 
+    // --- Profile Approval Workflow ---
+
+    // Teacher: Request an update
+    const requestProfileUpdate = (username, changes) => {
+        const requests = safeParse('teacher_profile_requests', []);
+
+        // Remove existing pending request for this user if any (replace with new)
+        const filtered = requests.filter(r => r.username !== username);
+
+        const newRequest = {
+            id: `req_${Date.now()}`,
+            username,
+            timestamp: new Date().toISOString(),
+            changes,
+            status: 'pending'
+        };
+
+        const updatedRequests = [...filtered, newRequest];
+        localStorage.setItem('teacher_profile_requests', JSON.stringify(updatedRequests));
+        return true;
+    };
+
+    // Teacher/Admin: Check if pending
+    const getPendingRequest = (username) => {
+        const requests = safeParse('teacher_profile_requests', []);
+        return requests.find(r => r.username === username && r.status === 'pending');
+    };
+
+    // Admin: Get all requests
+    const getProfileRequests = () => {
+        const requests = safeParse('teacher_profile_requests', []);
+        return requests.filter(r => r.status === 'pending');
+    };
+
+    // Admin: Approve
+    const approveProfileRequest = (requestId) => {
+        const requests = safeParse('teacher_profile_requests', []);
+        const request = requests.find(r => r.id === requestId);
+
+        if (!request) return false;
+
+        // Apply changes to actual user
+        const allUsers = getAllUsers();
+        const userIndex = allUsers.findIndex(u => u.username === request.username);
+
+        if (userIndex !== -1) {
+            const updatedUser = { ...allUsers[userIndex], ...request.changes };
+            const newUsers = [...allUsers];
+            newUsers[userIndex] = updatedUser;
+            localStorage.setItem('all_users', JSON.stringify(newUsers));
+
+            // If approving self (unlikely for admin approving teacher, but good practice updates session if matched)
+            if (user && user.username === request.username) {
+                setUser(updatedUser);
+                localStorage.setItem('app_user', JSON.stringify(updatedUser));
+            }
+        }
+
+        // Remove request
+        const remaining = requests.filter(r => r.id !== requestId);
+        localStorage.setItem('teacher_profile_requests', JSON.stringify(remaining));
+        return true;
+    };
+
+    // Admin: Reject
+    const rejectProfileRequest = (requestId) => {
+        const requests = safeParse('teacher_profile_requests', []);
+        const remaining = requests.filter(r => r.id !== requestId);
+        localStorage.setItem('teacher_profile_requests', JSON.stringify(remaining));
+        return true;
+    };
+
     const deleteUser = (username) => {
         // 1. Remove from all_users (dynamic users)
         const storedUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
@@ -182,11 +323,22 @@ export const AuthProvider = ({ children }) => {
         // 3. Remove profile data
         localStorage.removeItem(`student_profile_${username}`);
 
+        // 4. Remove pending requests
+        const requests = safeParse('teacher_profile_requests', []);
+        const remainingRequests = requests.filter(r => r.username !== username);
+        localStorage.setItem('teacher_profile_requests', JSON.stringify(remainingRequests));
+
         return true;
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, updateProfile, changePassword, checkUserStatus, registerStudent, allowedYears, updateAllowedYears, getAllUsers, deleteUser, loading }}>
+        <AuthContext.Provider value={{
+            user, login, logout, updateProfile, changePassword, checkUserStatus,
+            registerStudent, allowedYears, updateAllowedYears, getAllUsers, deleteUser,
+            setupPassword, completeProfile, loading,
+            // New Exports
+            requestProfileUpdate, getProfileRequests, approveProfileRequest, rejectProfileRequest, getPendingRequest
+        }}>
             {children}
         </AuthContext.Provider>
     );

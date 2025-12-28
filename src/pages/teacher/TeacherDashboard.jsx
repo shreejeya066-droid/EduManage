@@ -20,6 +20,9 @@ export const TeacherDashboard = () => {
                     <h2 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h2>
                     <p className="text-gray-500">Welcome, {user?.name || 'Teacher'}</p>
                 </div>
+                <div className="bg-indigo-100 text-indigo-800 text-sm font-medium px-3 py-1 rounded-full border border-indigo-200">
+                    Teacher – View Only
+                </div>
             </div>
 
             {/* Metrics */}

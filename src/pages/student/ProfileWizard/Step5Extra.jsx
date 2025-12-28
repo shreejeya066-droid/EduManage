@@ -71,7 +71,7 @@ export const Step5Extra = ({ data, onChange }) => {
                             value={currentHobby}
                             onChange={(e) => setCurrentHobby(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Type a hobby and press correct button"
+                            placeholder="Type a hobby and press +  button"
                             className="mb-0" // Override default margin if any
                         />
                     </div>

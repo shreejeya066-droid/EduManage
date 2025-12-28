@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { MainLayout } from '../components/layout/MainLayout';
 import { Login } from '../pages/auth/Login';
 import { TeacherLogin } from '../pages/auth/TeacherLogin';
+import { TeacherCreatePassword } from '../pages/auth/TeacherCreatePassword';
+import { TeacherProfileSetup } from '../pages/auth/TeacherProfileSetup';
 import { ForgotPassword } from '../pages/auth/ForgotPassword';
 
 import { ChangePassword } from '../pages/auth/ChangePassword';
@@ -74,9 +76,12 @@ export const AppRouter = () => {
                 <Route path="/student/profile-wizard" element={<WizardContainer />} />
             </Route>
 
+            <Route path="/teacher/create-password" element={<TeacherCreatePassword />} />
+
             {/* Teacher Routes */}
             <Route element={<ProtectedRoute allowedRoles={['teacher']} loginPath="/teacher-login"><MainLayout /></ProtectedRoute>}>
                 <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+                <Route path="/teacher/profile-setup" element={<TeacherProfileSetup />} />
                 <Route path="/teacher/students" element={<StudentList />} />
                 <Route path="/teacher/students/:id" element={<StudentDetailView />} />
                 <Route path="/teacher/analytics" element={<Analytics />} />

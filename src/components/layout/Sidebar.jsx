@@ -56,11 +56,11 @@ export const Sidebar = () => {
     const links = getLinks();
 
     return (
-        <aside className="hidden h-screen w-64 flex-col border-r bg-gray-50/40 md:flex">
-            <div className="flex h-14 items-center border-b px-6 font-bold text-xl text-indigo-600">
+        <aside className="hidden h-full w-64 flex-col border-r bg-gray-50/40 md:flex flex-shrink-0">
+            <div className="flex h-14 items-center border-b px-6 font-bold text-xl text-indigo-600 flex-shrink-0">
                 EduManage
             </div>
-            <nav className="flex-1 space-y-1 p-4">
+            <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
                 {links.map((link) => (
                     <NavLink
                         key={link.path}

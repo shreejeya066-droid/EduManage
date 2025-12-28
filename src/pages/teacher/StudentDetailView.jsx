@@ -19,12 +19,14 @@ export const StudentDetailView = () => {
 
         if (found) {
             setStudent(found);
-            // In a real app, this would be an API call. 
-            // Here we look for localStorage "student_profile_{username}" if it exists, 
-            // OR use the basic info from the found user object if no profile is set.
+            // Retrieve shared student profile data (same source as Admin)
             const storedProfile = localStorage.getItem(`student_profile_${found.username}`);
             if (storedProfile) {
-                setProfileDetails(JSON.parse(storedProfile));
+                try {
+                    setProfileDetails(JSON.parse(storedProfile));
+                } catch (e) {
+                    console.error("Error parsing profile data", e);
+                }
             }
         }
     }, [id, getAllUsers]);
@@ -38,23 +40,32 @@ export const StudentDetailView = () => {
         );
     }
 
-    const InfoRow = ({ label, value }) => (
-        <div className="flex flex-col sm:grid sm:grid-cols-3 border-b py-2 last:border-0 gap-1 sm:gap-0">
-            <span className="font-medium text-gray-500">{label}</span>
-            <span className="sm:col-span-2 text-gray-900 font-medium break-words">{value || '-'}</span>
-        </div>
-    );
+    // Helper to format camelCase keys to Title Case
+    const formatKey = (key) => {
+        // Handle specific known acronyms if needed, or just general regex
+        const result = key.replace(/([A-Z])/g, " $1");
+        return result.charAt(0).toUpperCase() + result.slice(1);
+    };
 
-    const Section = ({ title, children }) => (
-        <div className="border rounded-lg mb-4 overflow-hidden bg-white shadow-sm">
-            <div className="w-full flex items-center justify-between p-4 bg-gray-50 border-b">
-                <span className="font-semibold text-gray-800">{title}</span>
+    const InfoRow = ({ label, value }) => {
+        // If value is an object (like a file reference or nested data), handle it gracefully
+        let displayValue = value;
+
+        if (typeof value === 'object' && value !== null) {
+            displayValue = JSON.stringify(value);
+        } else if (value === true) {
+            displayValue = 'Yes';
+        } else if (value === false) {
+            displayValue = 'No';
+        }
+
+        return (
+            <div className="flex flex-col sm:grid sm:grid-cols-3 border-b py-3 last:border-0 gap-1 sm:gap-0 hover:bg-gray-50 transition-colors px-2">
+                <span className="font-medium text-gray-500 capitalize">{label}</span>
+                <span className="sm:col-span-2 text-gray-900 font-medium break-words">{displayValue || '-'}</span>
             </div>
-            <div className="p-4">
-                {children}
-            </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -65,79 +76,66 @@ export const StudentDetailView = () => {
             </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3 text-amber-800">
-                <Shield className="h-5 w-5" />
-                <span className="font-medium">Editing restricted – Admin approval required to change student data.</span>
+                <Shield className="h-5 w-5 flex-shrink-0" />
+                <span className="font-medium">Teacher View Only – You are viewing the complete student record. Editing is restricted to Admin.</span>
             </div>
 
             {/* Header / Profile Card */}
             <div className="bg-white rounded-xl shadow-sm border p-6 flex flex-col md:flex-row items-center gap-6">
-                <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center border-4 border-white shadow-sm">
+                <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center border-4 border-white shadow-sm flex-shrink-0">
                     <User className="h-12 w-12 text-indigo-600" />
                 </div>
-                <div className="text-center md:text-left flex-1">
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        {profileDetails ? `${profileDetails.firstName} ${profileDetails.lastName}` : student.name}
+                <div className="text-center md:text-left flex-1 min-w-0">
+                    <h1 className="text-2xl font-bold text-gray-900 truncate">
+                        {profileDetails?.firstName ? `${profileDetails.firstName} ${profileDetails.lastName}` : student.name}
                     </h1>
-                    <p className="text-gray-500">{student.username}</p>
+                    <p className="text-gray-500 font-mono">{student.username}</p>
                     <div className="mt-2 flex flex-wrap justify-center md:justify-start gap-2">
-                        {student.department && (
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
-                                {student.department}
+                        {(student.department || profileDetails?.department) && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {student.department || profileDetails.department}
                             </span>
                         )}
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
                             Role: {student.role}
                         </span>
                     </div>
                 </div>
             </div>
 
-            {/* Profile Content */}
-            {profileDetails ? (
-                <div className="space-y-6">
-                    <Section title="1. Personal Information">
-                        <InfoRow label="Full Name" value={`${profileDetails.firstName} ${profileDetails.lastName}`} />
-                        <InfoRow label="Date of Birth" value={profileDetails.dob} />
-                        <InfoRow label="Gender" value={profileDetails.gender} />
-                        <InfoRow label="Blood Group" value={profileDetails.bloodGroup} />
-                    </Section>
+            {/* Dynamic Profile Content */}
+            <Card className="overflow-hidden">
+                <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Complete Profile Data
+                    </h3>
+                    <span className="text-xs text-gray-500 uppercase tracking-wider">Read Only</span>
+                </div>
 
-                    <Section title="2. Contact Details">
-                        <InfoRow label="Mobile" value={profileDetails.mobile} />
-                        <InfoRow label="Email" value={profileDetails.email} />
-                        <InfoRow label="Address" value={profileDetails.address} />
-                    </Section>
-
-                    <Section title="3. Academic Details">
-                        <InfoRow label="Course" value={profileDetails.course} />
-                        <InfoRow label="Department" value={profileDetails.department} />
-                        <InfoRow label="Roll Number" value={profileDetails.rollNumber} />
-                        <div className="mt-4 border-t pt-4">
-                            <h4 className="font-semibold text-gray-700 mb-3">Semester Performance</h4>
-                            {[1, 2, 3, 4, 5, 6].map(sem => (
-                                <div key={sem} className="flex flex-col sm:grid sm:grid-cols-3 border-b py-2 text-sm gap-1 sm:gap-0">
-                                    <span className="text-gray-600">Semester {sem}</span>
-                                    <span className="font-medium">GPA: {profileDetails[`sem${sem}_cgpa`] || '-'}</span>
-                                    <span className="flex items-center text-indigo-600">
-                                        {profileDetails[`sem${sem}_file`] ? (
-                                            <><FileText className="h-4 w-4 mr-1" /> Sheet Available</>
-                                        ) : <span className="text-gray-400">No Sheet</span>}
-                                    </span>
-                                </div>
+                {profileDetails ? (
+                    <div className="p-4">
+                        <div className="grid grid-cols-1 gap-x-8">
+                            {/* Dynamically Map ALL keys in profile details */}
+                            {Object.entries(profileDetails).map(([key, value]) => (
+                                <InfoRow
+                                    key={key}
+                                    label={formatKey(key)}
+                                    value={value}
+                                />
                             ))}
                         </div>
-                        <div className="mt-4 pt-2">
-                            <InfoRow label="Overall CGPA" value={profileDetails.cgpa} />
-                            <InfoRow label="Backlogs" value={profileDetails.backlogs} />
-                        </div>
-                    </Section>
-                </div>
-            ) : (
-                <Card className="p-12 text-center text-gray-500">
-                    <p>Student has not completed their profile yet.</p>
-                    <p className="text-sm mt-2">Basic Info: {student.name} ({student.username})</p>
-                </Card>
-            )}
+                        {Object.keys(profileDetails).length === 0 && (
+                            <p className="text-center text-gray-500 py-4">Profile data object is empty.</p>
+                        )}
+                    </div>
+                ) : (
+                    <div className="p-12 text-center text-gray-500">
+                        <p className="text-lg">Student has not completed their profile yet.</p>
+                        <p className="text-sm mt-2">Only basic login information is available.</p>
+                    </div>
+                )}
+            </Card>
         </div>
     );
 };

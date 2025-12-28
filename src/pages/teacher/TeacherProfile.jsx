@@ -7,52 +7,90 @@ import { useAuth } from '../../context/AuthContext';
 import { User, Mail, BookOpen, Building } from 'lucide-react';
 
 export const TeacherProfile = () => {
-    const { user, updateProfile } = useAuth();
+    const { user, requestProfileUpdate, getPendingRequest, loading } = useAuth();
     const location = useLocation();
+
     const [isEditing, setIsEditing] = useState(false);
+    const [pendingRequest, setPendingRequest] = useState(null);
+
+    // Combined local state: starts with User data, potentially overridden by pending request for preview?
+    // Requirement: "View details". If pending, maybe show "Current" and "Requested".
+    // For now, let's show Current Data, and if editing, pre-fill with Current.
+
     const [formData, setFormData] = useState({
         name: '',
-        email: 'teacher@university.edu', // Mock email
-        phone: '123-456-7890',
+        email: '',
+        phone: '',
         department: '',
-        designation: 'Senior Lecturer',
-        specialization: 'Software Engineering'
+        qualification: '',
+        experience: ''
     });
 
     useEffect(() => {
-        if (location.state?.isNewProfile) {
-            setIsEditing(true);
-        }
-    }, [location.state]);
-
-    useEffect(() => {
         if (user) {
-            setFormData(prev => ({
-                ...prev,
+            setFormData({
                 name: user.name || '',
-                department: user.department || ''
-            }));
+                email: user.email || '',
+                phone: user.phone || '',
+                department: user.department || '',
+                qualification: user.qualification || '',
+                experience: user.experience || ''
+            });
+
+            // Check for pending requests
+            const req = getPendingRequest(user.username);
+            setPendingRequest(req);
         }
-    }, [user]);
+    }, [user, getPendingRequest]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSave = () => {
-        // Logic to save profile
-        updateProfile({ name: formData.name }); // Only mock updating name for now
-        setIsEditing(false);
+        // Create change object (diff) or just send all editable fields
+        const changes = {
+            name: formData.name, // Usually name is fixed but allowing request
+            email: formData.email,
+            phone: formData.phone,
+            qualification: formData.qualification,
+            experience: formData.experience
+        };
+
+        const success = requestProfileUpdate(user.username, changes);
+        if (success) {
+            setPendingRequest({ changes, status: 'pending' }); // Optimistic update
+            setIsEditing(false);
+            alert('Profile update requested. Waiting for Admin approval.');
+        }
     };
+
+    if (loading) return <div>Loading...</div>;
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">My Profile</h2>
-                <Button variant={isEditing ? "ghost" : "primary"} onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
-                    {isEditing ? "Cancel" : "Edit Profile"}
-                </Button>
+                {!pendingRequest && (
+                    <Button variant={isEditing ? "ghost" : "primary"} onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
+                        {isEditing ? "Cancel" : "Edit Profile"}
+                    </Button>
+                )}
             </div>
+
+            {/* Pending Request Banner */}
+            {pendingRequest && (
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-4">
+                    <div className="flex">
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-amber-800">Update Pending Approval</h3>
+                            <div className="mt-2 text-sm text-amber-700">
+                                <p>You have requested changes to your profile. You cannot make further edits until an administrator reviews your request.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid gap-6 md:grid-cols-3">
                 <div className="space-y-6">
@@ -61,8 +99,8 @@ export const TeacherProfile = () => {
                             <User className="h-16 w-16 text-indigo-600" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold">{formData.name}</h3>
-                            <p className="text-sm text-gray-500">{formData.designation}</p>
+                            <h3 className="text-xl font-bold">{user?.name}</h3>
+                            <p className="text-sm text-gray-500">{user?.department} Department</p>
                             <div className="mt-2 inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
                                 {user?.id}
                             </div>
@@ -99,29 +137,36 @@ export const TeacherProfile = () => {
                         </div>
                     </Card>
 
-                    <Card title="Academic Details" className="p-6">
+                    <Card title="Professional Details" className="p-6">
                         <div className="grid gap-4 md:grid-cols-2">
                             <Input
                                 label="Department"
                                 name="department"
                                 value={formData.department}
-                                disabled={true} // Usually department is fixed
+                                disabled={true} // Totally fixed
                                 suffix={<Building className="h-4 w-4 text-gray-400" />}
                             />
                             <Input
-                                label="Specialization"
-                                name="specialization"
-                                value={formData.specialization}
+                                label="Qualification"
+                                name="qualification"
+                                value={formData.qualification}
                                 onChange={handleChange}
                                 disabled={!isEditing}
                                 suffix={<BookOpen className="h-4 w-4 text-gray-400" />}
+                            />
+                            <Input
+                                label="Experience"
+                                name="experience"
+                                value={formData.experience}
+                                onChange={handleChange}
+                                disabled={!isEditing}
                             />
                         </div>
                     </Card>
 
                     {isEditing && (
                         <div className="flex justify-end">
-                            <Button onClick={handleSave}>Save Changes</Button>
+                            <Button onClick={handleSave}>Request Changes</Button>
                         </div>
                     )}
                 </div>
