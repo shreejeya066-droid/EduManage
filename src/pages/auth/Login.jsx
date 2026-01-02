@@ -25,22 +25,27 @@ export const Login = () => {
     const location = useLocation();
 
     const validateRollNumber = (roll) => {
-        // Format: <YEAR>BIT<NUMBER>
-        // Example: 23BIT01, 23BIT120, 25BIT05
-        const regex = /^(\d{2})BIT(\d{1,3})$/;
+        // Format: <YEAR><DEPT><NUMBER>
+        // Example: 23BIT01, 23CS120, 24EC05
+        const regex = /^(\d{2})([A-Z]+)(\d{1,3})$/;
         const match = roll.match(regex);
 
         if (!match) {
-            return { valid: false, message: 'Invalid Username. Format must be YYBITXXX (e.g. 23BIT01).' };
+            return { valid: false, message: 'Invalid Username. Format must be YY<DEPT>XXX (e.g. 23BIT01).' };
         }
 
         const year = match[1]; // e.g., '23'
-        const batch = `${year}BIT`; // '23BIT'
-        const number = parseInt(match[2], 10);
+        // const dept = match[2]; // e.g., 'BIT'
+        const number = parseInt(match[3], 10);
 
-        // Check Allowed Years
-        if (!allowedYears.includes(batch)) {
-            return { valid: false, message: `Invalid Username. Admission year ${year} is not enabled.` };
+        // Check Allowed Years (Now checking just the year part)
+        // If allowedYears contains full batch codes (legacy), we check if the year matches any start, OR if allowedYears is just years.
+        // To be safe/robust: Check if 'year' is in allowedYears OR if `${year}BIT` was the old style.
+        // With my change to mockData, it's just years. But let's be robust.
+        const isYearAllowed = allowedYears.some(y => y === year || y.startsWith(year));
+
+        if (!isYearAllowed) {
+            return { valid: false, message: `Invalid Username. Admission year 20${year} is not enabled.` };
         }
 
         // Check Number Range 01 - 200

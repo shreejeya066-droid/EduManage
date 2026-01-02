@@ -1,11 +1,18 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { Menu } from 'lucide-react';
 
-export const Navbar = () => {
+export const Navbar = ({ onMenuClick }) => {
     const { user } = useAuth();
 
     return (
         <header className="flex h-14 items-center gap-4 border-b bg-gray-50/40 px-6 lg:h-[60px]">
+            <button
+                onClick={onMenuClick}
+                className="inline-flex items-center justify-center rounded-md text-gray-700 md:hidden hover:text-indigo-600 focus:outline-none"
+            >
+                <Menu className="h-6 w-6" />
+            </button>
             <div className="w-full flex-1">
                 <h1 className="text-lg font-semibold text-gray-900">
                     Welcome, {user?.name}

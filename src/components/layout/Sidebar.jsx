@@ -8,11 +8,12 @@ import {
     BookOpen,
     Settings,
     LogOut,
-    BarChart3
+    BarChart3,
+    X
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen, onClose }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -56,36 +57,54 @@ export const Sidebar = () => {
     const links = getLinks();
 
     return (
-        <aside className="hidden h-full w-64 flex-col border-r bg-gray-50/40 md:flex flex-shrink-0">
-            <div className="flex h-14 items-center border-b px-6 font-bold text-xl text-indigo-600 flex-shrink-0">
-                EduManage
-            </div>
-            <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-                {links.map((link) => (
-                    <NavLink
-                        key={link.path}
-                        to={link.path}
-                        className={({ isActive }) =>
-                            clsx(
-                                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:text-indigo-600',
-                                isActive ? 'bg-indigo-50 text-indigo-600' : 'text-gray-500'
-                            )
-                        }
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                    onClick={onClose}
+                />
+            )}
+
+            <aside
+                className={clsx(
+                    'fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r bg-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 md:bg-gray-50/40',
+                    isOpen ? 'translate-x-0' : '-translate-x-full'
+                )}
+            >
+                <div className="flex h-14 items-center justify-between border-b px-6 font-bold text-xl text-indigo-600 flex-shrink-0">
+                    <span>EduManage</span>
+                    <button onClick={onClose} className="text-gray-500 md:hidden">
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
+                <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+                    {links.map((link) => (
+                        <NavLink
+                            key={link.path}
+                            to={link.path}
+                            className={({ isActive }) =>
+                                clsx(
+                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:text-indigo-600',
+                                    isActive ? 'bg-indigo-50 text-indigo-600' : 'text-gray-500'
+                                )
+                            }
+                        >
+                            <link.icon className="h-4 w-4" />
+                            {link.name}
+                        </NavLink>
+                    ))}
+                </nav>
+                <div className="border-t p-4">
+                    <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
                     >
-                        <link.icon className="h-4 w-4" />
-                        {link.name}
-                    </NavLink>
-                ))}
-            </nav>
-            <div className="border-t p-4">
-                <button
-                    onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
-                >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                </button>
-            </div>
-        </aside>
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                    </button>
+                </div>
+            </aside>
+        </>
     );
 };

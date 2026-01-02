@@ -56,7 +56,7 @@ export const USERS = [
     }
 ];
 
-export const ALLOWED_ADMISSION_YEARS = ['19BIT', '20BIT', '21BIT', '22BIT', '23BIT', '25BIT'];
+export const ALLOWED_ADMISSION_YEARS = ['19', '20', '21', '22', '23', '24', '25', '26'];
 
 // Mock Analytics Data for Teachers
 export const ANALYTICS_DATA = {
