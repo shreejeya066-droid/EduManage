@@ -23,7 +23,6 @@ export const Step1Personal = ({ data, onChange }) => {
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
-                    <option value="Other">Other</option>
                 </select>
             </div>
 
@@ -31,22 +30,6 @@ export const Step1Personal = ({ data, onChange }) => {
             <Input label="Nationality" name="nationality" value={data.nationality} onChange={onChange} />
 
             <Input label="Religion" name="religion" value={data.religion} onChange={onChange} />
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Year of Study</label>
-                <select
-                    name="yearOfStudy"
-                    value={data.yearOfStudy}
-                    onChange={onChange}
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                    <option value="">Select Year</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                </select>
-            </div>
         </div>
     );
 };

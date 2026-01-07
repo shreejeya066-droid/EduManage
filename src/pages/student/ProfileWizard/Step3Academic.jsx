@@ -7,6 +7,24 @@ export const Step3Academic = ({ data, onChange }) => {
             <div className="grid gap-6 md:grid-cols-2">
                 <Input label="Degree" name="course" value={data.course} onChange={onChange} placeholder="e.g. B.Sc" />
                 <Input label="Department" name="department" value={data.department} onChange={onChange} placeholder="e.g. Computer Science" />
+
+                <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Year of Study</label>
+                        <select
+                            name="yearOfStudy"
+                            value={data.yearOfStudy}
+                            onChange={onChange}
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="">Select Year</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">

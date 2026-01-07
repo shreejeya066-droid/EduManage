@@ -307,6 +307,65 @@ export const AuthProvider = ({ children }) => {
         return true;
     };
 
+    // --- Password Recovery Flow ---
+
+    const verifyEmail = (email) => {
+        const allUsers = getAllUsers();
+        const user = allUsers.find(u => u.email === email);
+        return { exists: !!user, user };
+    };
+
+    const sendOTP = (email) => {
+        // Mock OTP generation
+        const otp = '1234';
+        console.log(`[MOCK OTP] Sent to ${email}: ${otp}`);
+        // Store OTP in localStorage for verification
+        localStorage.setItem(`otp_${email}`, JSON.stringify({ code: otp, expires: Date.now() + 300000 })); // 5 mins
+        return { success: true, message: 'OTP sent successfully' };
+    };
+
+    const verifyOTP = (email, code) => {
+        const stored = safeParse(`otp_${email}`, null);
+        if (!stored) return { success: false, message: 'OTP expired or not found' };
+
+        if (Date.now() > stored.expires) {
+            localStorage.removeItem(`otp_${email}`);
+            return { success: false, message: 'OTP expired' };
+        }
+
+        if (stored.code === code) {
+            localStorage.removeItem(`otp_${email}`); // Consume OTP
+            return { success: true };
+        }
+
+        return { success: false, message: 'Invalid OTP' };
+    };
+
+    const resetPassword = (email, newPassword) => {
+        const allUsers = getAllUsers();
+        const userIndex = allUsers.findIndex(u => u.email === email);
+
+        if (userIndex === -1) return { success: false, message: 'User not found' };
+
+        const updatedUser = {
+            ...allUsers[userIndex],
+            password: newPassword,
+            isFirstLogin: false // Resetting password usually confirms account active
+        };
+
+        const newUsers = [...allUsers];
+        newUsers[userIndex] = updatedUser;
+        localStorage.setItem('all_users', JSON.stringify(newUsers));
+
+        // If the user was logged in (unlikely for forgot pwd, but possible), update session
+        if (user && user.email === email) {
+            setUser(updatedUser);
+            localStorage.setItem('app_user', JSON.stringify(updatedUser));
+        }
+
+        return { success: true };
+    };
+
     const deleteUser = (username) => {
         // 1. Remove from all_users (dynamic users)
         const storedUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
@@ -337,7 +396,9 @@ export const AuthProvider = ({ children }) => {
             registerStudent, allowedYears, updateAllowedYears, getAllUsers, deleteUser,
             setupPassword, completeProfile, loading,
             // New Exports
-            requestProfileUpdate, getProfileRequests, approveProfileRequest, rejectProfileRequest, getPendingRequest
+            requestProfileUpdate, getProfileRequests, approveProfileRequest, rejectProfileRequest, getPendingRequest,
+            // Password Recovery Exports
+            verifyEmail, sendOTP, verifyOTP, resetPassword
         }}>
             {children}
         </AuthContext.Provider>

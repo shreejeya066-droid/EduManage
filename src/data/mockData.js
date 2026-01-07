@@ -4,6 +4,7 @@ export const USERS = [
         name: 'System Admin',
         role: 'admin',
         username: 'admin',
+        email: 'admin@example.com',
         password: 'password', // Default
         isFirstLogin: true,
     },
