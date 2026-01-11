@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // Added import
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { ShieldCheck, Lock, CheckCircle } from 'lucide-react';
 
 export const AdminResetPassword = () => {
+    const { resetPassword } = useAuth(); // Destructure resetPassword
     const navigate = useNavigate();
     const location = useLocation();
     const [passwords, setPasswords] = useState({ newPassword: '', confirmPassword: '' });
@@ -27,6 +29,11 @@ export const AdminResetPassword = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
+        if (!location.state?.email) {
+            setError('Missing email information. Please restart the process.');
+            return;
+        }
+
         if (!passwords.newPassword || !passwords.confirmPassword) {
             setError('Please fill in all fields.');
             return;
@@ -43,13 +50,21 @@ export const AdminResetPassword = () => {
         }
 
         setLoading(true);
-        // Mock password update
+
+        // Use resetPassword from context
         setTimeout(() => {
+            const result = resetPassword(location.state.email, passwords.newPassword);
+
             setLoading(false);
-            setSuccess(true);
-            setTimeout(() => {
-                navigate('/admin/login');
-            }, 2000);
+
+            if (result.success) {
+                setSuccess(true);
+                setTimeout(() => {
+                    navigate('/admin/login');
+                }, 2000);
+            } else {
+                setError(result.message || 'Failed to update password. Please try again.');
+            }
         }, 1000);
     };
 

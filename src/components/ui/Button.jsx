@@ -2,11 +2,15 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import { Loader2 } from 'lucide-react';
+
 export const Button = ({
     children,
     variant = 'primary',
     size = 'md',
     className,
+    isLoading,
+    disabled,
     ...props
 }) => {
     const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
@@ -28,8 +32,10 @@ export const Button = ({
     return (
         <button
             className={twMerge(clsx(baseStyles, variants[variant], sizes[size], className))}
+            disabled={isLoading || disabled}
             {...props}
         >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {children}
         </button>
     );

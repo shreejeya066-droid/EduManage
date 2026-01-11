@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // Added import
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { ShieldCheck } from 'lucide-react';
 
 export const AdminOTPVerification = () => {
+    const { verifyOTP } = useAuth(); // Destructure verifyOTP
     const navigate = useNavigate();
     const location = useLocation();
     const [otp, setOtp] = useState('');
@@ -28,7 +30,8 @@ export const AdminOTPVerification = () => {
 
     const handleResend = () => {
         setTimeLeft(60);
-        // Mock resend logic
+        // Logic to resend OTP using sendOTP from context could be added here if needed
+        // For now, adhering to existing scope
         console.log('Resending OTP...');
     };
 
@@ -42,12 +45,17 @@ export const AdminOTPVerification = () => {
         }
 
         setLoading(true);
-        // Mock verification
+
+        // Use verifyOTP from context
+        // Small timeout to simulate network if desired, or direct call
         setTimeout(() => {
-            if (otp === '1234') { // Mock valid OTP
+            const result = verifyOTP(location.state.email, otp);
+
+            if (result.success) {
+                // Navigate to reset password with email
                 navigate('/admin/reset-password', { state: { email: location.state.email } });
             } else {
-                setError('Invalid or expired OTP. Please try again.');
+                setError(result.message || 'Invalid or expired OTP. Please try again.');
                 setLoading(false);
             }
         }, 800);

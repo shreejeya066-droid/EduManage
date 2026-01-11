@@ -52,7 +52,19 @@ export const AuthProvider = ({ children }) => {
         const validStoredUsers = Array.isArray(storedUsers) ? storedUsers : [];
         const validDeletedUsers = Array.isArray(deletedUsers) ? deletedUsers : [];
 
-        const all = [...USERS, ...validStoredUsers];
+        // Map stored users by username for efficient lookup and override
+        const storedUserMap = new Map(validStoredUsers.map(u => [u.username, u]));
+
+        // Process mock users: if an updated version exists in storage, merge it; otherwise use mock
+        const mergedUsers = USERS.map(user =>
+            storedUserMap.has(user.username) ? { ...user, ...storedUserMap.get(user.username) } : user
+        );
+
+        // Add entirely new users from storage (those not in mock data)
+        const mockUsernames = new Set(USERS.map(u => u.username));
+        const newUsers = validStoredUsers.filter(u => !mockUsernames.has(u.username));
+
+        const all = [...mergedUsers, ...newUsers];
         return all.filter(u => !validDeletedUsers.includes(u.username));
     };
 
