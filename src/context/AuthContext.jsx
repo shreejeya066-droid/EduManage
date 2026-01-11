@@ -202,47 +202,31 @@ export const AuthProvider = ({ children }) => {
     };
 
     const changePassword = (newPassword) => {
-        if (!user) return;
-
-        // In a real backend, we'd update the DB. Here we update our local instance 
-        // AND technically we should update the mock array but importing/exporting consts doesn't work that way dynamically.
-        // We will just simulate it by updating the current user session state.
+        if (!user) return false;
 
         const updatedUser = { ...user, password: newPassword, isFirstLogin: false };
 
-        // Requirement: "After password update, user must login again with the new password."
-        // So we should actually logout after this.
+        // 1. Update in "DB" (localStorage) to ensure it persists for next login
+        const allUsers = getAllUsers();
+        // Match by username case-insensitively just to be safe, though IDs are better
+        const userIndex = allUsers.findIndex(u => u.username.toLowerCase() === user.username.toLowerCase());
 
-        // But we need to pretend the "DB" is updated. 
-        // Since we can't write to the file `mockData.js` at runtime in the browser,
-        // we will have to handle this "re-login" carefully. 
-        // We'll assume for this demo that once they "change" it, the next login *checks* against the NEW password?
-        // OR we just force them to log outcome and then they log in with the *same* mock credentials 
-        // but we pretend it's new? 
-        // BETTER APPROACH: We can't easily persist changes to `mockData.js` across reloads without a backend.
-        // For this demo, we will update `localStorage` to store the "database" state? 
-        // Or just simplify: 
-        // When "Change Password" happens -> Alert "Password Updated" -> Logout.
-        // Next Login -> User enters ANY password (or the new one) and we accept it?
-        // Let's try to do it right: We can store the modified USERS list in localStorage too.
+        if (userIndex !== -1) {
+            const newUsers = [...allUsers];
+            newUsers[userIndex] = updatedUser;
+            localStorage.setItem('all_users', JSON.stringify(newUsers));
+        } else {
+            // Fallback: If for some reason user isn't found (shouldn't happen), add them?
+            // This might happen if we are running off pure mock data initially. 
+            // getAllUsers handles merging, so this case implies the user is not in the merged list??
+            // Let's just create the list if it's somehow empty/missing this user.
+            const newUsers = [...allUsers, updatedUser];
+            localStorage.setItem('all_users', JSON.stringify(newUsers));
+        }
 
-        // Let's implement a simple "Mock DB" in localStorage for persistence across reloads if needed,
-        // but for simplicity, let's just trust the session flow for now.
-
-        // For the new "Module 1" requirement flow: "After successful update -> redirect to Student Profile Multi-Step Form."
-        // This implies maintaining the session.
-        // We will update the user state in memory and localStorage but NOT toggle 'isFirstLogin' to false yet?
-        // Actually, we should toggle it to false so they don't get kicked back to change-password.
-        // BUT if we toggle it, and then they reload, they are just a normal user.
-        // We want them to go to the Wizard.
-        // Let's rely on the routing: Login -> ChangePwd -> Wizard.
-        // The Wizard is accessible to students.
-
-        // Update user state
+        // 2. Update current session
         setUser(updatedUser);
         localStorage.setItem('app_user', JSON.stringify(updatedUser));
-
-
 
         return true;
     };

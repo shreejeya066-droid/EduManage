@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { User, Mail, Phone, Lock } from 'lucide-react';
 
@@ -14,6 +15,15 @@ export const AdminProfile = () => {
         mobile: '9876543210'
     });
 
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+    const { changePassword } = useAuth();
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -22,6 +32,33 @@ export const AdminProfile = () => {
         e.preventDefault();
         setIsEditing(false);
         // Mock save
+    };
+
+    const handleChangePassword = () => {
+        setPasswordError('');
+        setPasswordSuccess('');
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setPasswordError("Passwords do not match");
+            return;
+        }
+
+        if (passwordData.newPassword.length < 6) {
+            setPasswordError("Password must be at least 6 characters");
+            return;
+        }
+
+        const success = changePassword(passwordData.newPassword);
+        if (success) {
+            setPasswordSuccess("Password updated successfully");
+            setTimeout(() => {
+                setIsPasswordModalOpen(false);
+                setPasswordData({ newPassword: '', confirmPassword: '' });
+                setPasswordSuccess('');
+            }, 2000);
+        } else {
+            setPasswordError("Failed to update password");
+        }
     };
 
     return (
@@ -110,13 +147,67 @@ export const AdminProfile = () => {
                                             <p className="text-xs text-gray-500">Last changed 30 days ago</p>
                                         </div>
                                     </div>
-                                    <Button variant="outline" size="sm">Change Password</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setIsPasswordModalOpen(true)}>Change Password</Button>
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
             </Card>
+
+            <Modal
+                isOpen={isPasswordModalOpen}
+                onClose={() => {
+                    setIsPasswordModalOpen(false);
+                    setPasswordData({ newPassword: '', confirmPassword: '' });
+                    setPasswordError('');
+                    setPasswordSuccess('');
+                }}
+                title="Change Password"
+                footer={
+                    <div className="flex justify-end gap-2 w-full">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsPasswordModalOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleChangePassword}
+                            disabled={!passwordData.newPassword || !passwordData.confirmPassword}
+                        >
+                            Update Password
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    {passwordError && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+                            {passwordError}
+                        </div>
+                    )}
+                    {passwordSuccess && (
+                        <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
+                            {passwordSuccess}
+                        </div>
+                    )}
+                    <Input
+                        label="New Password"
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        placeholder="Enter new password"
+                    />
+                    <Input
+                        label="Confirm Password"
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        placeholder="Confirm new password"
+                    />
+                </div>
+            </Modal>
         </div>
     );
 };
