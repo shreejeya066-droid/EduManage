@@ -18,6 +18,7 @@ export const AdminLoginPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [attempts, setAttempts] = useState(0);
+    const [resetClicks, setResetClicks] = useState(0);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -65,13 +66,30 @@ export const AdminLoginPage = () => {
         }
     };
 
+    const handleTitleClick = () => {
+        setResetClicks(prev => {
+            const newCount = prev + 1;
+            if (newCount >= 5) {
+                handleReset();
+                return 0;
+            }
+            return newCount;
+        });
+    };
+
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
             <div className="mb-8 text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-purple-600">
                     <ShieldCheck className="h-8 w-8" />
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900">Admin Portal</h1>
+                <h1
+                    className="text-3xl font-bold text-gray-900 cursor-default select-none active:scale-95 transition-transform"
+                    onClick={handleTitleClick}
+                    title={resetClicks > 0 ? `${5 - resetClicks} clicks for reset` : ''}
+                >
+                    Admin Portal
+                </h1>
                 <p className="mt-2 text-gray-600">Secure System Management Access</p>
             </div>
 
@@ -130,21 +148,13 @@ export const AdminLoginPage = () => {
                         Sign In
                     </Button>
 
-                    <div className="mt-4 text-center space-y-3">
+                    <div className="mt-4 text-center">
                         <button
                             type="button"
                             onClick={() => navigate('/')}
-                            className="text-sm text-gray-500 hover:text-gray-700 block w-full"
+                            className="text-sm text-gray-500 hover:text-gray-700"
                         >
                             Back to Home
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleReset}
-                            className="text-xs text-red-500 hover:text-red-700 font-medium"
-                            title="Clear all local data and restore defaults"
-                        >
-                            Reset Application Data
                         </button>
                     </div>
                 </form>
