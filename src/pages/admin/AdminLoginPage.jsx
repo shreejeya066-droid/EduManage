@@ -58,6 +58,13 @@ export const AdminLoginPage = () => {
         }, 800);
     };
 
+    const handleReset = () => {
+        if (window.confirm('Are you sure you want to reset all application data? This will restore default accounts and clear any changes.')) {
+            localStorage.clear();
+            window.location.reload();
+        }
+    };
+
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
             <div className="mb-8 text-center">
@@ -123,13 +130,21 @@ export const AdminLoginPage = () => {
                         Sign In
                     </Button>
 
-                    <div className="mt-4 text-center">
+                    <div className="mt-4 text-center space-y-3">
                         <button
                             type="button"
                             onClick={() => navigate('/')}
-                            className="text-sm text-gray-500 hover:text-gray-700"
+                            className="text-sm text-gray-500 hover:text-gray-700 block w-full"
                         >
                             Back to Home
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            className="text-xs text-red-500 hover:text-red-700 font-medium"
+                            title="Clear all local data and restore defaults"
+                        >
+                            Reset Application Data
                         </button>
                     </div>
                 </form>

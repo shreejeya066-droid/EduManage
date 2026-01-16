@@ -28,7 +28,7 @@ export const QueryInput = () => {
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">AI Analysis Query</h2>
+                <h2 className="text-3xl font-bold tracking-tight"> Analysis Query</h2>
                 <p className="text-gray-500">Ask questions about student performance, trends, or specific data points.</p>
             </div>
 

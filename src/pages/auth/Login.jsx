@@ -31,7 +31,7 @@ export const Login = () => {
         const match = roll.match(regex);
 
         if (!match) {
-            return { valid: false, message: 'Invalid Username. Format must be YY<DEPT>XXX (e.g. 23BIT01).' };
+            return { valid: false, message: 'Invalid Username. Format must be YY<DEPT>XXX (e.g. YYBIT01).' };
         }
 
         const year = match[1]; // e.g., '23'

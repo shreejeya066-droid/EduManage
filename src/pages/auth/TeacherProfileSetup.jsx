@@ -84,7 +84,8 @@ export const TeacherProfileSetup = () => {
                         <Input
                             label="Phone Number"
                             name="phone"
-                            placeholder="+91 98765 43210"
+                            maxLength={10}
+                            placeholder="Enter Phone number"
                             value={formData.phone}
                             onChange={handleChange}
                             required
