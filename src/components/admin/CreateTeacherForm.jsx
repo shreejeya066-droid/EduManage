@@ -23,7 +23,7 @@ export const CreateTeacherForm = ({ onClose, onSubmit }) => {
     const [selectedSubjects, setSelectedSubjects] = useState([]);
 
     const availableSubjects = [
-        'Mathematics', 'Physics', 'Chemistry', 'English',
+        'Programming', 'Physics', 'Chemistry', 
         'Data Structures', 'Algorithms', 'Database Management', 'Networks'
     ];
 
@@ -129,9 +129,9 @@ export const CreateTeacherForm = ({ onClose, onSubmit }) => {
                             >
                                 <option value="">Select Department</option>
                                 <option value="CSE">Computer Science</option>
-                                <option value="ECE">Electronics</option>
-                                <option value="MECH">Mechanical</option>
-                                <option value="Sci">Science & Humanities</option>
+                                <option value="SCI">Biological Science or Physical Science</option>
+            
+
                             </select>
                         </div>
 
