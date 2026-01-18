@@ -8,9 +8,14 @@ import { Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const StudentList = () => {
-    const { getAllUsers } = useAuth(); // Use shared data source
+    const { getAllUsers, refreshUsers } = useAuth(); // Use shared data source
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+
+    // Ensure data is fresh when viewing the list
+    React.useEffect(() => {
+        if (refreshUsers) refreshUsers();
+    }, []);
 
     // Fetch all users and filter for students
     // This ensures we get specific students added via Admin/Student Portal
@@ -58,57 +63,61 @@ export const StudentList = () => {
 
     // Helper to get Year/Section display (e.g. "Ist - A")
     const getStudentYearSection = (student) => {
-        let year = null;
-        let section = null;
+        let year = student.yearOfStudy;
+        let section = student.section;
 
-        // Try to determine year from multiple sources
-        if (student.grade) {
-            // If grade is like "10th", "12th", or just "1"
-            const num = parseInt(student.grade);
-            if (!isNaN(num)) year = num;
+        // Fallback or specific parsers
+        if (!year && student.semester) {
+            year = Math.ceil(student.semester / 2);
         }
 
-        // Try profile data for more accurate "Current Year", "Year of Study", or "Semester"
-        try {
-            const profile = localStorage.getItem(`student_profile_${student.username}`);
-            if (profile) {
-                const data = JSON.parse(profile);
-
-                // Check yearOfStudy first as per requirement
-                if (data.yearOfStudy) {
-                    const match = data.yearOfStudy.match(/(\d+)/); // Extract first number "3rd" -> 3
-                    if (match) year = parseInt(match[0]);
-                }
-                else if (data.currentYear) year = data.currentYear;
-                else if (data.semester) year = Math.ceil(data.semester / 2);
-
-                if (data.section) section = data.section;
-            }
-        } catch (e) {
-            // ignore
+        // If simple number/string, use it. If needed to parse from old formats:
+        if (typeof year === 'string') {
+            const match = year.match(/(\d+)/);
+            if (match) year = parseInt(match[0]);
         }
 
-        if (!year && !section) return 'N/A';
+        // SECTION CHECK:
+        // Some students might have section directly or nested? Schema has 'section' at top level?
+        // Let's check studentModel... 
+        // studentModel DOES NOT have 'section' in the schema I just wrote! 
+        // It has 'department', 'yearOfStudy', 'semester', 'course', 'rollNumber'.
+        // It DOES NOT have 'section'. 
+        // Wait, 'section' was in the mocked data or Wizard?
+        // WizardContainer: `section: '',` in formData state.
+        // BUT studentModel schema update I did in Step 263... lines 25+.
+        // Let's look... `course`, `department`, `yearOfStudy`, `semester`. NO `section`.
+        // So `section` won't be saved to DB unless I add it to Schema.
+        // However, user just wants "year/profile details". 
+        // I will use 'department' as secondary info if section is missing.
 
-        // Format Year to "Ist", "IInd" style or return as is if not convertible
+        const dept = student.department;
+
+        if (!year && !dept) return 'N/A';
+
+        // Format Year to "Ist", "IInd" style
         const formatYear = (y) => {
             if (!y) return '';
             const num = parseInt(y);
             if (isNaN(num)) return y;
-            if (num === 1) return 'Ist';
-            if (num === 2) return 'IInd';
-            if (num === 3) return 'IIIrd';
-            if (num === 4) return 'IVth';
+            if (num === 1) return 'I (1st)';
+            if (num === 2) return 'II (2nd)';
+            if (num === 3) return 'III (3rd)';
+            if (num === 4) return 'IV (4th)';
             return `${num}th`;
         };
 
         const yearStr = formatYear(year);
 
-        if (yearStr && section) return `${yearStr} - ${section}`;
-        if (yearStr) return yearStr;
-        if (section) return `Section ${section}`;
+        if (yearStr && dept) return `${yearStr} Year - ${dept}`;
+        if (yearStr) return `${yearStr} Year`;
+        if (dept) return dept;
 
         return 'N/A';
+
+
+
+
     };
 
     return (

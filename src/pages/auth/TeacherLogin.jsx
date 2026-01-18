@@ -6,40 +6,52 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
 export const TeacherLogin = () => {
-    const [step, setStep] = useState('check_id'); // 'check_id' | 'password'
+    // Modes: 'check_id', 'password' (removed 'register')
+    const [step, setStep] = useState('check_id');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
-    const { login, checkUserStatus } = useAuth();
+
+    // Auth
+    const { login, checkUserStatus, loginTeacherAsync } = useAuth();
     const navigate = useNavigate();
 
-    const handleCheckId = (e) => {
+    const handleCheckId = async (e) => {
         e.preventDefault();
         setError(null);
 
         if (!username) {
-            setError('Please enter your Teacher ID.');
+            setError('Please enter your Teacher ID or Email.');
             return;
         }
 
-        const status = checkUserStatus(username);
+        try {
+            const { checkTeacherStatus } = await import('../../services/api');
+            const status = await checkTeacherStatus(username);
 
-        if (!status.exists) {
-            setError('Invalid Teacher ID');
-            return;
-        }
+            if (!status.exists) {
+                setError('Teacher ID not found. Please contact the Admin.');
+                return;
+            }
 
-        // Check for new user flow
-        if (status.role === 'teacher' && status.isFirstLogin && status.passwordSet === false) {
-            // Redirect to Create Password Flow
-            navigate('/teacher/create-password', { state: { username: username } });
-        } else {
-            // Start Normal Login Flow
+            // Check if password needed
+            if (!status.hasPassword) {
+                navigate('/teacher/create-password', { state: { username: username } });
+                return;
+            }
+
             setStep('password');
+
+        } catch (err) {
+            console.error(err);
+            setError('Failed to check status. Using fallback login.');
+            setStep('password'); // Fallback to try login anyway if network fails? Or block?
+            // Safer to block or allow password if status check failed but user might exist.
+            // But UI asks for password step next anyway.
         }
     };
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError(null);
 
@@ -48,24 +60,14 @@ export const TeacherLogin = () => {
             return;
         }
 
-        const result = login(username, password);
+        // Try DB Login (Async)
+        // We pass username as 'email' parameter since controller now accepts both in that field
+        const result = await loginTeacherAsync(username, password);
 
         if (result.success) {
-            if (result.role === 'teacher') {
-                if (result.isFirstLogin) {
-                    // Password exists, but profile wizard incomplete
-                    navigate('/teacher/profile-setup');
-                } else {
-                    navigate('/teacher/dashboard');
-                }
-            } else if (result.role === 'admin') {
-                navigate('/admin/dashboard');
-            } else {
-                setError('Access restricted to Teachers only.');
-            }
+            navigate('/teacher/dashboard');
         } else {
-            // Strict error messaging
-            setError('Incorrect password');
+            setError('Login Failed: ' + (result.message || 'Invalid credentials'));
         }
     };
 
@@ -84,34 +86,36 @@ export const TeacherLogin = () => {
                 </div>
 
                 {step === 'check_id' && (
-                    <form onSubmit={handleCheckId} className="space-y-6">
-                        <div className="space-y-4">
-                            <Input
-                                label="Teacher ID"
-                                placeholder="Enter your Teacher ID"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                autoFocus
-                            />
-                        </div>
-
-                        {error && (
-                            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-100">
-                                {error}
+                    <div className="space-y-6">
+                        <form onSubmit={handleCheckId} className="space-y-6">
+                            <div className="space-y-4">
+                                <Input
+                                    label="Teacher ID or Email"
+                                    placeholder="Enter your ID or Email"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    autoFocus
+                                />
                             </div>
-                        )}
 
-                        <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" size="lg">
-                            Next
-                        </Button>
-                    </form>
+                            {error && (
+                                <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-100">
+                                    {error}
+                                </div>
+                            )}
+
+                            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" size="lg">
+                                Next
+                            </Button>
+                        </form>
+                    </div>
                 )}
 
                 {step === 'password' && (
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="p-4 bg-indigo-50 rounded mb-4 flex justify-between items-center">
                             <div>
-                                <span className="block text-xs text-gray-500 uppercase font-medium">Teacher ID</span>
+                                <span className="block text-xs text-gray-500 uppercase font-medium">Login as</span>
                                 <span className="block font-semibold text-gray-900">{username}</span>
                             </div>
                             <button type="button" onClick={handleBack} className="text-indigo-600 text-sm hover:underline">
@@ -135,16 +139,6 @@ export const TeacherLogin = () => {
                                 {error}
                             </div>
                         )}
-
-                        <div className="flex items-center justify-between text-sm">
-                            <label className="flex items-center text-gray-500">
-                                <input type="checkbox" className="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                Remember me
-                            </label>
-                            <Link to="/forgot-password" className="text-indigo-600 hover:text-indigo-500 font-medium">
-                                Forgot Password?
-                            </Link>
-                        </div>
 
                         <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" size="lg">
                             Sign In

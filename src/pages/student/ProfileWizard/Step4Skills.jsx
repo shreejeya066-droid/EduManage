@@ -56,7 +56,7 @@ export const Step4Skills = ({ data, onChange }) => {
                 </div>
             </div>
 
-            {/* Internship Details Section (Merged) */}
+
             <div className="space-y-6">
                 <h3 className="text-lg font-medium text-indigo-900">Internship Details</h3>
                 <p className="text-sm text-gray-500 -mt-4">If you have completed any internships, please provide details below.</p>

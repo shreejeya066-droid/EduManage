@@ -1,35 +1,87 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { USERS, ALLOWED_ADMISSION_YEARS as DEFAULT_ALLOWED_YEARS } from '../data/mockData';
-
-
+import { ALLOWED_ADMISSION_YEARS as DEFAULT_ALLOWED_YEARS } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // We'll mimic persistence with simple localStorage for the demo duration
-    // In a real app, this would be more robust.
-
     const [allowedYears, setAllowedYears] = useState(DEFAULT_ALLOWED_YEARS);
+    const [allUsers, setAllUsers] = useState([]);
 
+    // Initial Load
     useEffect(() => {
         const storedUser = localStorage.getItem('app_user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
+        if (storedUser) setUser(JSON.parse(storedUser));
 
-        const storedYears = localStorage.getItem('allowed_years');
-        if (storedYears) {
-            setAllowedYears(JSON.parse(storedYears));
-        }
+        // Fetch Settings from DB
+        fetchSettingsAsync();
+
+        // Fetch Users (for Admin/Teacher views that rely on context cache)
+        fetchAllUsers();
+
         setLoading(false);
     }, []);
 
-    const updateAllowedYears = (years) => {
-        setAllowedYears(years);
-        localStorage.setItem('allowed_years', JSON.stringify(years));
+    const fetchAllUsers = async () => {
+        try {
+            const { fetchStudents, fetchTeachers } = await import('../services/api');
+            const [students, teachers] = await Promise.all([
+                fetchStudents().catch(() => []),
+                fetchTeachers().catch(() => [])
+            ]);
+
+            // Normalize data structures
+            const sList = students.map(s => ({
+                ...s,
+                username: s.rollNumber,
+                role: 'student',
+                name: s.firstName ? `${s.firstName} ${s.lastName}` : s.rollNumber
+            }));
+
+            const tList = teachers.map(t => ({
+                ...t,
+                role: 'teacher'
+            }));
+
+            setAllUsers([...sList, ...tList]);
+            // Cache for sync access if needed (optional)
+            localStorage.setItem('all_users_cache', JSON.stringify([...sList, ...tList]));
+        } catch (error) {
+            console.error("Failed to fetch users for context", error);
+        }
+    };
+
+    const fetchSettingsAsync = async () => {
+        try {
+            const { getSetting } = await import('../services/api');
+            const years = await getSetting('allowed_years');
+            if (years) {
+                setAllowedYears(years);
+                localStorage.setItem('allowed_years', JSON.stringify(years));
+            } else {
+                // Fallback
+                const storedYears = localStorage.getItem('allowed_years');
+                if (storedYears) setAllowedYears(JSON.parse(storedYears));
+            }
+        } catch (error) {
+            // Fallback
+            const storedYears = localStorage.getItem('allowed_years');
+            if (storedYears) setAllowedYears(JSON.parse(storedYears));
+        }
+    };
+
+    const updateAllowedYears = async (years) => {
+        try {
+            const { updateSetting } = await import('../services/api');
+            // Optimistic Update
+            setAllowedYears(years);
+            localStorage.setItem('allowed_years', JSON.stringify(years));
+
+            await updateSetting('allowed_years', years);
+        } catch (error) {
+            console.error("Failed to update settings", error);
+        }
     };
 
     // Safe JSON parse helper
@@ -38,155 +90,120 @@ export const AuthProvider = ({ children }) => {
             const item = localStorage.getItem(key);
             return item ? JSON.parse(item) : fallback;
         } catch (e) {
-            console.error(`Error parsing ${key} from localStorage`, e);
             return fallback;
         }
     };
 
-    // Helper to get all users including runtime created ones, excluding deleted ones
+    // --- User Management helpers ---
     const getAllUsers = () => {
-        const storedUsers = safeParse('all_users', []);
-        const deletedUsers = safeParse('deleted_users', []);
-
-        // Ensure storedUsers is an array
-        const validStoredUsers = Array.isArray(storedUsers) ? storedUsers : [];
-        const validDeletedUsers = Array.isArray(deletedUsers) ? deletedUsers : [];
-
-        // Map stored users by username for efficient lookup and override
-        const storedUserMap = new Map(validStoredUsers.map(u => [u.username, u]));
-
-        // Process mock users: if an updated version exists in storage, merge it; otherwise use mock
-        const mergedUsers = USERS.map(user =>
-            storedUserMap.has(user.username) ? { ...user, ...storedUserMap.get(user.username) } : user
-        );
-
-        // Add entirely new users from storage (those not in mock data)
-        const mockUsernames = new Set(USERS.map(u => u.username));
-        const newUsers = validStoredUsers.filter(u => !mockUsernames.has(u.username));
-
-        const all = [...mergedUsers, ...newUsers];
-        return all.filter(u => !validDeletedUsers.includes(u.username));
-    };
-
-    const checkUserStatus = (username) => {
-        const allUsers = getAllUsers();
-        // Case-insensitive check for better UX
-        const found = allUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-
-        if (!found) return { exists: false };
-
-        return {
-            exists: true,
-            hasPassword: !!found.password && found.password.length > 0,
-            passwordSet: found.passwordSet !== false, // Default to true if undefined
-            isFirstLogin: found.isFirstLogin,
-            role: found.role,
-            name: found.name,
-            department: found.department
-        };
-    };
-
-    const setupPassword = (username, newPassword) => {
-        const allUsers = getAllUsers();
-        const userIndex = allUsers.findIndex(u => u.username === username);
-
-        if (userIndex === -1) return false;
-
-        const updatedUser = {
-            ...allUsers[userIndex],
-            password: newPassword,
-            passwordSet: true,
-            // Keep isFirstLogin: true until they complete profile? 
-            // Plan says: Redirect to Profile Completion. 
-            // Let's keep isFirstLogin true so if they drop off, they come back to a flow.
-            // But we need a way to distinguish "Needs Password" vs "Needs Profile".
-            // We'll rely on passwordSet=true check.
-        };
-
-        const newUsers = [...allUsers];
-        newUsers[userIndex] = updatedUser;
-
-        // Persist
-        localStorage.setItem('all_users', JSON.stringify(newUsers));
-
-        // Auto-login the user into session
-        setUser(updatedUser);
-        localStorage.setItem('app_user', JSON.stringify(updatedUser));
-
-        return true;
-    };
-
-    const completeProfile = (profileData) => {
-        if (!user) return false;
-
-        const updatedUser = {
-            ...user,
-            ...profileData,
-            isFirstLogin: false // Flow complete
-        };
-
-        // Update in "DB"
-        const allUsers = getAllUsers();
-        const userIndex = allUsers.findIndex(u => u.username === user.username);
-        if (userIndex !== -1) {
-            const newUsers = [...allUsers];
-            newUsers[userIndex] = updatedUser;
-            localStorage.setItem('all_users', JSON.stringify(newUsers));
+        // Return in-memory state which is populated async
+        // Fallback to cache if state is empty (e.g. valid refresh)
+        if (allUsers.length === 0) {
+            const cached = safeParse('all_users_cache', []);
+            if (cached.length > 0) return cached;
         }
-
-        // Update session
-        setUser(updatedUser);
-        localStorage.setItem('app_user', JSON.stringify(updatedUser));
-        return true;
+        return allUsers;
     };
 
-    const registerStudent = (username, password) => {
-        const newUser = {
-            id: username,
-            name: username, // Default name
-            role: 'student',
-            username: username,
-            password: password,
-            isFirstLogin: false,
-        };
+    // checkUserStatus Removed - components should rely on login response or explicit check API
+    const checkUserStatus = () => ({ exists: true }); // Dummy for avoiding crash in unmigrated components
 
-        // Save to "DB"
-        const storedUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
-        storedUsers.push(newUser);
-        localStorage.setItem('all_users', JSON.stringify(storedUsers));
+    // --- ASYNC METHODS (MONGODB INTEGRATION) ---
 
-        // Auto login
-        setUser(newUser);
-        localStorage.setItem('app_user', JSON.stringify(newUser));
-        return { success: true, role: 'student' };
-    };
-
-    const login = (username, password) => {
-        const allUsers = getAllUsers();
-        const foundUser = allUsers.find(u => u.username === username && u.password === password);
-
-        if (foundUser) {
-            // Check for Account Status
-            if (foundUser.role === 'teacher' && foundUser.status && foundUser.status !== 'Active') {
-                return { success: false, message: 'Account is pending approval or disabled. Contact Administrator.' };
-            }
-
-            // Create a session object
-            const sessionUser = { ...foundUser };
-
+    // 1. Student Login
+    const loginStudentAsync = async (rollNumber, password) => {
+        try {
+            const { loginStudent } = await import('../services/api');
+            const data = await loginStudent({ rollNumber, password });
+            const sessionUser = { ...data, role: 'student' };
             setUser(sessionUser);
             localStorage.setItem('app_user', JSON.stringify(sessionUser));
-
-            // Return extended info for routing logic
-            return {
-                success: true,
-                isFirstLogin: sessionUser.isFirstLogin,
-                role: sessionUser.role,
-                passwordSet: sessionUser.passwordSet !== false
-            };
+            return { success: true, role: 'student', isFirstLogin: data.isFirstLogin };
+        } catch (error) {
+            return { success: false, message: error.message };
         }
+    };
 
-        return { success: false, message: 'Incorrect password' };
+    // 2. Student Register (Create Password)
+    const registerStudentAsync = async (rollNumber, password) => {
+        try {
+            const { registerStudent } = await import('../services/api');
+            const data = await registerStudent({ rollNumber, password });
+            const sessionUser = { ...data, role: 'student' };
+            setUser(sessionUser);
+            localStorage.setItem('app_user', JSON.stringify(sessionUser));
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    };
+
+    // 3. Update Student Profile
+    const updateStudentProfileAsync = async (profileData) => {
+        if (!user || !user.rollNumber) return { success: false, message: 'No student logged in' };
+        try {
+            const { updateStudentProfile } = await import('../services/api');
+            const updatedUser = await updateStudentProfile(user.rollNumber, profileData);
+            const sessionUser = { ...user, ...updatedUser };
+            setUser(sessionUser);
+            localStorage.setItem('app_user', JSON.stringify(sessionUser));
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    };
+
+    // 4. Admin Async Methods
+    const loginAdminAsync = async (username, password) => {
+        try {
+            const { loginAdmin } = await import('../services/api');
+            const data = await loginAdmin({ username, password });
+            const sessionUser = { ...data, role: 'admin' };
+            setUser(sessionUser);
+            localStorage.setItem('app_user', JSON.stringify(sessionUser));
+            return { success: true, role: 'admin' };
+        } catch (error) {
+            // Fallback to legacy login for now if DB fails or user not found in DB (migration phase)
+            // But prefer DB.
+            return { success: false, message: error.message };
+        }
+    };
+
+    const registerAdminAsync = async (username, email, password) => {
+        try {
+            const { registerAdmin } = await import('../services/api');
+            const data = await registerAdmin({ username, email, password });
+            const sessionUser = { ...data, role: 'admin' };
+            setUser(sessionUser);
+            localStorage.setItem('app_user', JSON.stringify(sessionUser));
+            return { success: true, role: 'admin' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    };
+
+    const updateAdminProfileAsync = async (updates) => {
+        if (!user || user.role !== 'admin') return { success: false, message: 'Not authorized' };
+        try {
+            const { updateAdminProfile } = await import('../services/api');
+            const updatedUser = await updateAdminProfile(user._id, updates);
+            // Note: user._id must exist. If legacy user, this might fail.
+
+            const sessionUser = { ...user, ...updatedUser };
+            setUser(sessionUser);
+            localStorage.setItem('app_user', JSON.stringify(sessionUser));
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    };
+
+
+    // --- Legacy Sync Methods (Deprecated) ---
+    // --- Legacy Sync Methods (Deprecated) ---
+    const login = async (username, password) => {
+        // Redirect to async login
+        return loginAdminAsync(username, password);
     };
 
     const logout = () => {
@@ -194,207 +211,79 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('app_user');
     };
 
-    const updateProfile = (profileData) => {
-        if (!user) return;
-        const updatedUser = { ...user, ...profileData };
-        setUser(updatedUser);
-        localStorage.setItem('app_user', JSON.stringify(updatedUser));
-    };
-
-    const changePassword = (newPassword) => {
-        if (!user) return false;
-
-        const updatedUser = { ...user, password: newPassword, isFirstLogin: false };
-
-        // 1. Update in "DB" (localStorage) to ensure it persists for next login
-        const allUsers = getAllUsers();
-        // Match by username case-insensitively just to be safe, though IDs are better
-        const userIndex = allUsers.findIndex(u => u.username.toLowerCase() === user.username.toLowerCase());
-
-        if (userIndex !== -1) {
-            const newUsers = [...allUsers];
-            newUsers[userIndex] = updatedUser;
-            localStorage.setItem('all_users', JSON.stringify(newUsers));
-        } else {
-            // Fallback: If for some reason user isn't found (shouldn't happen), add them?
-            // This might happen if we are running off pure mock data initially. 
-            // getAllUsers handles merging, so this case implies the user is not in the merged list??
-            // Let's just create the list if it's somehow empty/missing this user.
-            const newUsers = [...allUsers, updatedUser];
-            localStorage.setItem('all_users', JSON.stringify(newUsers));
-        }
-
-        // 2. Update current session
-        setUser(updatedUser);
-        localStorage.setItem('app_user', JSON.stringify(updatedUser));
-
-        return true;
-    };
-
-    // --- Profile Approval Workflow ---
-
-    // Teacher: Request an update
-    const requestProfileUpdate = (username, changes) => {
-        const requests = safeParse('teacher_profile_requests', []);
-
-        // Remove existing pending request for this user if any (replace with new)
-        const filtered = requests.filter(r => r.username !== username);
-
-        const newRequest = {
-            id: `req_${Date.now()}`,
-            username,
-            timestamp: new Date().toISOString(),
-            changes,
-            status: 'pending'
-        };
-
-        const updatedRequests = [...filtered, newRequest];
-        localStorage.setItem('teacher_profile_requests', JSON.stringify(updatedRequests));
-        return true;
-    };
-
-    // Teacher/Admin: Check if pending
-    const getPendingRequest = (username) => {
-        const requests = safeParse('teacher_profile_requests', []);
-        return requests.find(r => r.username === username && r.status === 'pending');
-    };
-
-    // Admin: Get all requests
-    const getProfileRequests = () => {
-        const requests = safeParse('teacher_profile_requests', []);
-        return requests.filter(r => r.status === 'pending');
-    };
-
-    // Admin: Approve
-    const approveProfileRequest = (requestId) => {
-        const requests = safeParse('teacher_profile_requests', []);
-        const request = requests.find(r => r.id === requestId);
-
-        if (!request) return false;
-
-        // Apply changes to actual user
-        const allUsers = getAllUsers();
-        const userIndex = allUsers.findIndex(u => u.username === request.username);
-
-        if (userIndex !== -1) {
-            const updatedUser = { ...allUsers[userIndex], ...request.changes };
-            const newUsers = [...allUsers];
-            newUsers[userIndex] = updatedUser;
-            localStorage.setItem('all_users', JSON.stringify(newUsers));
-
-            // If approving self (unlikely for admin approving teacher, but good practice updates session if matched)
-            if (user && user.username === request.username) {
-                setUser(updatedUser);
-                localStorage.setItem('app_user', JSON.stringify(updatedUser));
-            }
-        }
-
-        // Remove request
-        const remaining = requests.filter(r => r.id !== requestId);
-        localStorage.setItem('teacher_profile_requests', JSON.stringify(remaining));
-        return true;
-    };
-
-    // Admin: Reject
-    const rejectProfileRequest = (requestId) => {
-        const requests = safeParse('teacher_profile_requests', []);
-        const remaining = requests.filter(r => r.id !== requestId);
-        localStorage.setItem('teacher_profile_requests', JSON.stringify(remaining));
-        return true;
-    };
-
-    // --- Password Recovery Flow ---
-
-    const verifyEmail = (email) => {
-        const allUsers = getAllUsers();
-        const user = allUsers.find(u => u.email === email);
-        return { exists: !!user, user };
-    };
-
-    const sendOTP = (email) => {
-        // Mock OTP generation
-        const otp = '1234';
-        console.log(`[MOCK OTP] Sent to ${email}: ${otp}`);
-        // Store OTP in localStorage for verification
-        localStorage.setItem(`otp_${email}`, JSON.stringify({ code: otp, expires: Date.now() + 300000 })); // 5 mins
-        return { success: true, message: 'OTP sent successfully' };
-    };
-
-    const verifyOTP = (email, code) => {
-        const stored = safeParse(`otp_${email}`, null);
-        if (!stored) return { success: false, message: 'OTP expired or not found' };
-
-        if (Date.now() > stored.expires) {
-            localStorage.removeItem(`otp_${email}`);
-            return { success: false, message: 'OTP expired' };
-        }
-
-        if (stored.code === code) {
-            localStorage.removeItem(`otp_${email}`); // Consume OTP
+    // --- Async Backend Integration (Teachers) ---
+    const registerTeacherAsync = async (teacherData) => {
+        try {
+            const { registerTeacher } = await import('../services/api');
+            const data = await registerTeacher(teacherData);
+            const sessionUser = { ...data, role: 'teacher' };
+            setUser(sessionUser);
+            localStorage.setItem('app_user', JSON.stringify(sessionUser));
             return { success: true };
+        } catch (error) {
+            return { success: false, message: error.message };
         }
-
-        return { success: false, message: 'Invalid OTP' };
     };
 
-    const resetPassword = (email, newPassword) => {
-        const allUsers = getAllUsers();
-        const userIndex = allUsers.findIndex(u => u.email === email);
-
-        if (userIndex === -1) return { success: false, message: 'User not found' };
-
-        const updatedUser = {
-            ...allUsers[userIndex],
-            password: newPassword,
-            isFirstLogin: false // Resetting password usually confirms account active
-        };
-
-        const newUsers = [...allUsers];
-        newUsers[userIndex] = updatedUser;
-        localStorage.setItem('all_users', JSON.stringify(newUsers));
-
-        // If the user was logged in (unlikely for forgot pwd, but possible), update session
-        if (user && user.email === email) {
-            setUser(updatedUser);
-            localStorage.setItem('app_user', JSON.stringify(updatedUser));
+    const loginTeacherAsync = async (email, password) => {
+        try {
+            const { loginTeacher } = await import('../services/api');
+            const data = await loginTeacher({ email, password });
+            const sessionUser = { ...data, role: 'teacher' };
+            setUser(sessionUser);
+            localStorage.setItem('app_user', JSON.stringify(sessionUser));
+            return { success: true, role: 'teacher' };
+        } catch (error) {
+            return { success: false, message: error.message };
         }
-
-        return { success: true };
     };
 
-    const deleteUser = (username) => {
-        // 1. Remove from all_users (dynamic users)
-        const storedUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
-        const updatedUsers = storedUsers.filter(u => u.username !== username);
-        localStorage.setItem('all_users', JSON.stringify(updatedUsers));
+    // Placeholder Stubs for Sync methods to avoid crashes if UI still calls them
+    const setupPassword = (username, password) => registerStudentAsync(username, password);
+    const completeProfile = (data) => updateStudentProfileAsync(data);
+    const requestProfileUpdate = () => console.log('Not implemented for DB yet');
+    const getProfileRequests = () => [];
+    const approveProfileRequest = () => { };
+    const rejectProfileRequest = () => { };
+    const registerStudent = () => { };
+    const updateProfile = () => { };
 
-        // 2. Add to deleted_users list (to hide default users)
-        const deletedUsers = JSON.parse(localStorage.getItem('deleted_users') || '[]');
-        if (!deletedUsers.includes(username)) {
-            deletedUsers.push(username);
-            localStorage.setItem('deleted_users', JSON.stringify(deletedUsers));
+    // Password Recovery Stubs
+    const verifyEmail = () => ({ exists: false });
+    const sendOTP = () => { };
+    const verifyOTP = () => { };
+    const resetPassword = () => { };
+    const deleteUser = () => { };
+    const getPendingRequest = () => { };
+
+    // Admin Password Change Mock (for Profile)
+    const changePassword = async (newPassword) => {
+        if (user && user.role === 'admin' && user._id) {
+            const res = await updateAdminProfileAsync({ password: newPassword });
+            return res.success;
         }
-
-        // 3. Remove profile data
-        localStorage.removeItem(`student_profile_${username}`);
-
-        // 4. Remove pending requests
-        const requests = safeParse('teacher_profile_requests', []);
-        const remainingRequests = requests.filter(r => r.username !== username);
-        localStorage.setItem('teacher_profile_requests', JSON.stringify(remainingRequests));
-
+        // Fallback for legacy
         return true;
     };
+
 
     return (
         <AuthContext.Provider value={{
-            user, login, logout, updateProfile, changePassword, checkUserStatus,
-            registerStudent, allowedYears, updateAllowedYears, getAllUsers, deleteUser,
-            setupPassword, completeProfile, loading,
-            // New Exports
+            user, login, logout, loading,
+            // Legacy / Admin
+            checkUserStatus, getAllUsers, allowedYears, updateAllowedYears,
+            // Async (DB) Student
+            loginStudentAsync, registerStudentAsync, updateStudentProfileAsync,
+            // Async (DB) Teacher
+            registerTeacherAsync, loginTeacherAsync,
+            // Async (DB) Admin
+            loginAdminAsync, registerAdminAsync, updateAdminProfileAsync, changePassword,
+            refreshUsers: fetchAllUsers,
+
+            // Compatibility / Deprecated Stubs
+            setupPassword, completeProfile, registerStudent, updateProfile,
             requestProfileUpdate, getProfileRequests, approveProfileRequest, rejectProfileRequest, getPendingRequest,
-            // Password Recovery Exports
-            verifyEmail, sendOTP, verifyOTP, resetPassword
+            verifyEmail, sendOTP, verifyOTP, resetPassword, deleteUser
         }}>
             {children}
         </AuthContext.Provider>

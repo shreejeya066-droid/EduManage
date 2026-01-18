@@ -8,7 +8,8 @@ import { Search, Filter, MoreVertical, Plus, Users, ShieldAlert, Edit, Check, X,
 import { CreateStudentForm } from '../../components/admin/CreateStudentForm';
 
 export const StudentManagement = () => {
-    const { getAllUsers, deleteUser } = useAuth();
+    // const { getAllUsers, deleteUser } = useAuth(); // Removed unused
+
     const [students, setStudents] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -16,68 +17,67 @@ export const StudentManagement = () => {
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'requests'
 
     // Fetch students
-    const fetchStudents = () => {
-        const all = getAllUsers();
-        setStudents(all.filter(u => u.role === 'student'));
+    const fetchStudentsData = async () => {
+        try {
+            const { fetchStudents } = await import('../../services/api');
+            const data = await fetchStudents();
+            setStudents(data);
+        } catch (error) {
+            console.error("Failed to fetch students", error);
+        }
     };
 
     useEffect(() => {
-        fetchStudents();
+        fetchStudentsData();
     }, []);
 
-    const getProfileData = (username) => {
+    const handleCreateUser = async (formData) => {
         try {
-            return JSON.parse(localStorage.getItem(`student_profile_${username}`)) || null;
-        } catch (e) {
-            return null;
+            const { registerStudent } = await import('../../services/api');
+
+            const nameParts = formData.fullName.split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            await registerStudent({
+                rollNumber: formData.rollNumber,
+                password: 'password123',
+                firstName: firstName,
+                lastName: lastName,
+                email: formData.email,
+                phone: formData.mobile,
+                department: formData.department,
+                yearOfStudy: formData.year
+            });
+
+            setIsCreateModalOpen(false);
+            fetchStudentsData();
+            alert(`Student ${formData.rollNumber} created successfully.`);
+        } catch (error) {
+            console.error(error);
+            alert(`Failed to create student: ${error.message}`);
         }
     };
 
-    const handleCreateUser = (formData) => {
-        const defaultPassword = 'password123';
-        const username = formData.rollNumber;
-
-        const newUser = {
-            id: username,
-            name: formData.fullName,
-            role: 'student',
-            username: username,
-            password: defaultPassword,
-            isFirstLogin: true
-        };
-
-        const currentUsers = getAllUsers();
-        if (currentUsers.some(u => u.username === username)) {
-            alert('User with this Roll Number already exists');
-            return;
-        }
-
-        const updatedUsers = [...currentUsers, newUser];
-        localStorage.setItem('all_users', JSON.stringify(updatedUsers));
-
-        const profileData = {
-            firstName: formData.fullName.split(' ')[0],
-            lastName: formData.fullName.split(' ').slice(1).join(' '),
-            email: formData.email,
-            mobile: formData.mobile,
-            department: formData.department,
-            course: formData.department,
-        };
-        localStorage.setItem(`student_profile_${username}`, JSON.stringify(profileData));
-
-        setIsCreateModalOpen(false);
-        fetchStudents();
-    };
 
     const handleViewProfile = (student) => {
-        const profile = getProfileData(student.username);
-        setSelectedStudent({ ...student, profile });
+        // Profile data is now part of student object from DB (hopefully)
+        // Or we might need to fetch it? 
+        // The mock implementation had separate profile storage.
+        // DB implementation has profile fields in Student model.
+        // So student object should have fields like firstName, lastName etc.
+        setSelectedStudent(student);
     };
 
-    const handleDelete = (username) => {
+    const handleDelete = async (username) => {
         if (window.confirm(`Are you sure you want to delete student ${username}? This action cannot be undone.`)) {
-            deleteUser(username);
-            fetchStudents();
+            try {
+                const { deleteStudent } = await import('../../services/api');
+                await deleteStudent(username);
+                fetchStudentsData();
+            } catch (error) {
+                alert('Failed to delete student');
+            }
         }
     };
 
@@ -107,8 +107,8 @@ export const StudentManagement = () => {
     const pendingRequests = Object.values(profileRequests).filter(r => r.status === 'pending');
 
     const filteredStudents = students.filter(student =>
-        student.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (student.name && student.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (student.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (student.name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -229,11 +229,15 @@ export const StudentManagement = () => {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {filteredStudents.length > 0 ? (
                                         filteredStudents.map((student) => {
-                                            const profile = getProfileData(student.username);
+                                            const name = student.name ? student.name : (student.firstName ? `${student.firstName} ${student.lastName}` : 'Profile Pending');
+                                            // Backend returns rollNumber as the ID usually, or we mapped it.
+                                            // The Student Model has "rollNumber"
+                                            const displayId = student.rollNumber || student.username;
+
                                             return (
-                                                <tr key={student.username} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.username}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{profile?.firstName ? `${profile.firstName} ${profile.lastName}` : 'Profile Pending'}</td>
+                                                <tr key={student._id || displayId} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{displayId}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{name}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${student.isLocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                                                             {student.isLocked ? 'Locked' : 'Active'}
@@ -243,7 +247,7 @@ export const StudentManagement = () => {
                                                         <Button size="sm" variant="ghost" onClick={() => handleViewProfile(student)}>
                                                             <Eye className="h-4 w-4 mr-1" /> View
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-800 hover:bg-red-50" onClick={() => handleDelete(student.username)}>
+                                                        <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-800 hover:bg-red-50" onClick={() => handleDelete(displayId)}>
                                                             <Trash2 className="h-4 w-4 mr-1" /> Delete
                                                         </Button>
                                                     </td>
@@ -256,7 +260,8 @@ export const StudentManagement = () => {
                                                 No students found.
                                             </td>
                                         </tr>
-                                    )}
+                                    )
+                                    }
                                 </tbody>
                             </table>
                         </div>
@@ -274,21 +279,21 @@ export const StudentManagement = () => {
                     <div className="space-y-6">
                         <div className="flex items-center space-x-4 border-b pb-4">
                             <div className="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
-                                {selectedStudent.username.substring(0, 2)}
+                                {(selectedStudent.username || selectedStudent.rollNumber || '?').substring(0, 2)}
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900">
                                     {selectedStudent.profile?.firstName
                                         ? `${selectedStudent.profile.firstName} ${selectedStudent.profile.lastName}`
-                                        : selectedStudent.username}
+                                        : (selectedStudent.name || selectedStudent.username || selectedStudent.rollNumber)}
                                 </h3>
-                                <p className="text-gray-500">{selectedStudent.username}</p>
+                                <p className="text-gray-500">{selectedStudent.username || selectedStudent.rollNumber}</p>
                             </div>
                         </div>
 
                         {selectedStudent.profile ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <InfoItem label="Roll Number" value={selectedStudent.username} />
+                                <InfoItem label="Roll Number" value={selectedStudent.username || selectedStudent.rollNumber} />
                                 <InfoItem label="Year of Joining" value={selectedStudent.profile.yearOfJoining || 'N/A'} />
                                 <InfoItem label="Course" value={selectedStudent.profile.course} />
                                 <InfoItem label="Department" value={selectedStudent.profile.department} />

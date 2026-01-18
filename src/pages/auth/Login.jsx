@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Eye, EyeOff } from 'lucide-react';
+import { checkStudentStatus } from '../../services/api';
 
 export const Login = () => {
     const [username, setUsername] = useState('');
@@ -20,35 +21,27 @@ export const Login = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const { login, checkUserStatus, registerStudent, allowedYears } = useAuth();
+    // Use Async Methods
+    const { loginStudentAsync, registerStudentAsync, checkUserStatus, login, allowedYears, loginTeacherAsync } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation();
 
     const validateRollNumber = (roll) => {
-        // Format: <YEAR><DEPT><NUMBER>
-        // Example: 23BIT01, 23CS120, 24EC05
+        // Strict Validation for Students
         const regex = /^(\d{2})([A-Z]+)(\d{1,3})$/;
         const match = roll.match(regex);
 
         if (!match) {
-            return { valid: false, message: 'Invalid Username. Format must be YY<DEPT>XXX (e.g. YYBIT01).' };
+            return { valid: false, message: 'Invalid Username. Format must be YY<DEPT>XXX (e.g. 23BIT01).' };
         }
 
-        const year = match[1]; // e.g., '23'
-        // const dept = match[2]; // e.g., 'BIT'
-        const number = parseInt(match[3], 10);
-
-        // Check Allowed Years (Now checking just the year part)
-        // If allowedYears contains full batch codes (legacy), we check if the year matches any start, OR if allowedYears is just years.
-        // To be safe/robust: Check if 'year' is in allowedYears OR if `${year}BIT` was the old style.
-        // With my change to mockData, it's just years. But let's be robust.
+        const year = match[1];
         const isYearAllowed = allowedYears.some(y => y === year || y.startsWith(year));
 
         if (!isYearAllowed) {
             return { valid: false, message: `Invalid Username. Admission year 20${year} is not enabled.` };
         }
 
-        // Check Number Range 01 - 200
+        const number = parseInt(match[3], 10);
         if (number < 1 || number > 200) {
             return { valid: false, message: 'Invalid Username. Roll number must be between 01 and 200.' };
         }
@@ -58,7 +51,7 @@ export const Login = () => {
 
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError(null);
 
@@ -67,55 +60,100 @@ export const Login = () => {
             return;
         }
 
-        // 1. Check User Status First
-        const status = checkUserStatus(username);
+        const isStudentFormat = /^\d{2}[A-Z]+\d{1,3}$/.test(username);
 
-        // 2. Conditional Validation
-        if (status.exists && (status.role === 'teacher' || status.role === 'admin')) {
-            // Skip strict Roll Number regex for Teachers/Admins
-            if (!isPasswordVisible) {
-                setIsPasswordVisible(true);
-                return;
-            }
-        } else {
-            // For Students or Unknown users, apply strict format check
-            const validation = validateRollNumber(username);
-            if (!validation.valid) {
-                // If invalid format AND not found as teacher/admin -> Show error
-                setError(validation.message);
-                return;
-            }
-        }
+        // 1. If not password visible yet, we check status for students
+        if (!isPasswordVisible) {
 
-        // 3. Login Flow
-        if (!status.exists) {
-            // Case 1: First-time student -> Open Modal
-            setIsCreatePasswordOpen(true);
-        } else {
-            // Case 2: User exists
-            if (!isPasswordVisible) {
-                // Step 1: Show password field
-                setIsPasswordVisible(true);
-            } else {
-                // Step 2: Standard Login
-                if (!password) {
-                    setError('Please enter your password.');
+            // Validate Format if Student
+            if (isStudentFormat) {
+                const validation = validateRollNumber(username);
+                if (!validation.valid) {
+                    setError(validation.message);
                     return;
                 }
 
-                const result = login(username, password);
-                if (result.success) {
-                    if (result.role === 'teacher') {
-                        navigate('/teacher/dashboard');
-                    } else if (result.role === 'admin') {
-                        navigate('/admin/dashboard');
-                    } else {
-                        navigate('/student/dashboard');
+                // Check Status API
+                try {
+                    const status = await checkStudentStatus(username);
+                    // If New User OR No Password -> Go to Create Password
+                    if (!status.exists || !status.hasPassword) {
+                        setIsCreatePasswordOpen(true);
+                        return;
                     }
-                } else {
-                    setError(result.message);
+                    // Else -> Show Password Field
+                    setIsPasswordVisible(true);
+                } catch (err) {
+                    setError('Failed to verify ID status. Please try again.');
+                    console.error(err);
                 }
+            } else {
+                // Admin / Teacher / Simple ID -> Just ask for password
+                setIsPasswordVisible(true);
             }
+        } else {
+            // 2. Perform Login
+            if (!password) {
+                setError('Please enter your password.');
+                return;
+            }
+
+            if (isStudentFormat) {
+                const result = await loginStudentAsync(username, password);
+                if (result.success) {
+                    navigate('/student/dashboard');
+                } else {
+                    setError(result.message || 'Invalid credentials');
+                }
+            } else {
+                // Admin / Teacher Login
+                let result = await login(username, password);
+                if (result.success) {
+                    navigate('/admin/dashboard');
+                    return;
+                }
+
+                // Try Teacher
+                result = await loginTeacherAsync(username, password);
+                if (result.success) {
+                    navigate('/teacher/dashboard');
+                    return;
+                }
+
+                setError('Invalid credentials');
+            }
+        }
+    };
+
+    const handleCreatePassword = async () => {
+        setCreatePwdError(null);
+        // Regex: At least 1 Uppercase, 1 Digit, 1 Special Char, and Max 8 characters
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{1,8}$/;
+
+        if (!newPassword || !confirmPassword) {
+            setCreatePwdError('Please fill all fields.');
+            return;
+        }
+        if (newPassword.length > 8) {
+            setCreatePwdError('Password must be 8 characters or less.');
+            return;
+        }
+        if (!passwordRegex.test(newPassword)) {
+            setCreatePwdError('Password must contain at least 1 uppercase letter, 1 digit, and 1 special character.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setCreatePwdError('Passwords do not match.');
+            return;
+        }
+
+        // Register Student in DB
+        const result = await registerStudentAsync(username, newPassword);
+        if (result.success) {
+            setIsCreatePasswordOpen(false);
+            navigate('/student/dashboard');
+        } else {
+            setCreatePwdError('Failed to create password: ' + result.message);
         }
     };
 
@@ -123,45 +161,9 @@ export const Login = () => {
         setIsPasswordVisible(false);
         setPassword('');
         setError(null);
+        // Ensure new password modals are closed
+        setIsCreatePasswordOpen(false);
     };
-
-    const handleCreatePassword = () => {
-        setCreatePwdError(null);
-
-        // Regex: At least 1 Uppercase, 1 Digit, 1 Special Char, and Max 8 characters
-        // allow any characters as long as requirements are met
-        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{1,8}$/;
-
-        if (!newPassword || !confirmPassword) {
-            setCreatePwdError('Please fill all fields.');
-            return;
-        }
-
-        if (newPassword.length > 8) {
-            setCreatePwdError('Password must be 8 characters or less.');
-            return;
-        }
-
-        if (!passwordRegex.test(newPassword)) {
-            setCreatePwdError('Password must contain at least 1 uppercase letter, 1 digit, and 1 special character.');
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            setCreatePwdError('Passwords do not match.');
-            return;
-        }
-
-        // Register Student
-        const result = registerStudent(username, newPassword);
-        if (result.success) {
-            setIsCreatePasswordOpen(false);
-            navigate('/student/dashboard');
-        } else {
-            setCreatePwdError('Failed to create password.');
-        }
-    };
-
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -181,11 +183,7 @@ export const Login = () => {
                             disabled={isPasswordVisible}
                         />
                         {isPasswordVisible && (
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className="text-xs text-indigo-600 hover:text-indigo-800"
-                            >
+                            <button type="button" onClick={handleBack} className="text-xs text-indigo-600 hover:text-indigo-800">
                                 Change User ID
                             </button>
                         )}
@@ -222,15 +220,12 @@ export const Login = () => {
                 </form>
 
                 <div className="mt-6 text-center border-t pt-4 space-y-2">
-                    <p className="text-sm text-gray-600">
-
-                    </p>
                     <Link to="/" className="text-sm font-medium text-gray-600 hover:text-indigo-600 flex items-center justify-center gap-2 transition-colors">
                         ← Back to Home
                     </Link>
                 </div>
 
-                {/* First Time Password Creation Modal */}
+                {/* First Time Password Creation Modal - Registers to DB */}
                 <Modal
                     isOpen={isCreatePasswordOpen}
                     onClose={() => setIsCreatePasswordOpen(false)}
@@ -253,11 +248,7 @@ export const Login = () => {
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 maxLength={8}
                                 suffix={
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowNewPassword(!showNewPassword)}
-                                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                                    >
+                                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
                                         {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                     </button>
                                 }
@@ -269,11 +260,7 @@ export const Login = () => {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 maxLength={8}
                                 suffix={
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                                    >
+                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
                                         {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                     </button>
                                 }

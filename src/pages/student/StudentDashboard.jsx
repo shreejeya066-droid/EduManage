@@ -9,17 +9,28 @@ export const StudentDashboard = () => {
     const [requestStatus, setRequestStatus] = useState('none');
 
     useEffect(() => {
-        if (user) {
-            const key = `student_profile_${user.username}`;
-            const storedProfile = localStorage.getItem(key);
-            if (storedProfile) {
-                setProfileData(JSON.parse(storedProfile));
-            } else {
-                setProfileData(null);
+        const loadProfile = async () => {
+            if (user && user.rollNumber) {
+                try {
+                    // Dynamic import or static? Tool says "import from api.js". 
+                    // I will use dynamic import to avoid messing up top imports if I can't see them all, 
+                    // OR I'll assume I can add import in a separate tool call. 
+                    // I will use dynamic import inside useEffect to be safe given the tool constraints on "block replacement".
+                    const { fetchStudentProfile } = await import('../../services/api');
+                    const data = await fetchStudentProfile(user.rollNumber);
+                    setProfileData(data);
+                } catch (err) {
+                    console.error("Failed to load profile", err);
+                }
             }
+        };
 
+        if (user) {
+            loadProfile();
+
+            // Keep legacy mock requests for now until backend requests are implemented
             const requests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
-            const userRequest = requests[user.username];
+            const userRequest = requests[user.username || user.rollNumber]; // fallback
             if (userRequest) {
                 setRequestStatus(userRequest.status);
             }

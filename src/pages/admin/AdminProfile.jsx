@@ -7,12 +7,12 @@ import { useAuth } from '../../context/AuthContext';
 import { User, Mail, Phone, Lock } from 'lucide-react';
 
 export const AdminProfile = () => {
-    const { user } = useAuth();
+    const { user, changePassword, updateAdminProfileAsync } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         name: user?.name || 'Super Admin',
-        email: user?.username === 'admin' ? 'admin@school.edu' : 'admin@example.com',
-        mobile: '9876543210'
+        email: user?.email || (user?.username === 'admin' ? 'admin@school.edu' : 'admin@example.com'),
+        mobile: user?.mobile || '9876543210'
     });
 
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -22,19 +22,19 @@ export const AdminProfile = () => {
     });
     const [passwordError, setPasswordError] = useState('');
     const [passwordSuccess, setPasswordSuccess] = useState('');
-    const { changePassword } = useAuth();
+    // Removed duplicate destructuring of changePassword
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
+        await updateAdminProfileAsync(formData);
         setIsEditing(false);
-        // Mock save
     };
 
-    const handleChangePassword = () => {
+    const handleChangePassword = async () => {
         setPasswordError('');
         setPasswordSuccess('');
 
@@ -48,7 +48,7 @@ export const AdminProfile = () => {
             return;
         }
 
-        const success = changePassword(passwordData.newPassword);
+        const success = await changePassword(passwordData.newPassword);
         if (success) {
             setPasswordSuccess("Password updated successfully");
             setTimeout(() => {

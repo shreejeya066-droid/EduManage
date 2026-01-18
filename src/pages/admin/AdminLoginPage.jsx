@@ -8,7 +8,7 @@ import { ShieldCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export const AdminLoginPage = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, loginAdminAsync } = useAuth();
 
     const [formData, setFormData] = useState({
         username: '',
@@ -40,23 +40,22 @@ export const AdminLoginPage = () => {
         }
 
         setLoading(true);
-        // Simulate network delay
-        setTimeout(() => {
-            const result = login(formData.username, formData.password);
+
+        try {
+            // Try Async DB Login First
+            const result = await loginAdminAsync(formData.username, formData.password);
 
             if (result.success) {
-                if (result.role !== 'admin') {
-                    setError('Access Denied. You do not have admin privileges.');
-                    setLoading(false);
-                    return;
-                }
                 navigate('/admin/dashboard');
             } else {
+                setLoading(false);
                 setAttempts(prev => prev + 1);
                 setError(result.message || 'Invalid credentials');
-                setLoading(false);
             }
-        }, 800);
+        } catch (error) {
+            setLoading(false);
+            setError('An error occurred during login.');
+        }
     };
 
     const handleReset = () => {

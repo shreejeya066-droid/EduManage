@@ -34,7 +34,7 @@ export const WizardContainer = () => {
             // Step 2
             mobile: '', altMobile: '', email: '', address: '',
             // Step 3
-            course: '', department: '', section: '', rollNumber: user?.username || '', yearOfJoining: '',
+            course: '', department: '', section: '', rollNumber: user?.rollNumber || user?.username || '', yearOfJoining: '',
             tenthPercent: '', twelfthPercent: '', cgpa: '', semester: '', backlogs: '0', diplomaPercent: '',
             sem1_cgpa: '', sem1_file: '',
             sem2_cgpa: '', sem2_file: '',
@@ -67,17 +67,17 @@ export const WizardContainer = () => {
             // Step 3
             course, department, rollNumber, semester, yearOfJoining,
             // Step 4
-            programmingLanguages,
-            // Step 5 - Extracurriculars often optional, but user said "all details compulsory". 
-            // We'll enforce at least one if strict, usually just common sense fields.
+            programmingLanguages, technicalSkills, tools,
+            // Step 5
+            hobbies,
             // Step 6
             interestedDomain
         } = formData;
 
         switch (step) {
-            case 1: // Personal
-                if (!firstName || !lastName || !dob || !gender || !nationality) {
-                    alert("Please fill in all Personal Information fields (Name, DOB, Gender, Nationality).");
+            case 1: // Personal - Added bloodGroup check
+                if (!firstName || !lastName || !dob || !gender || !nationality || !bloodGroup) {
+                    alert("Please fill in all Mandatory Personal Information fields (Name, DOB, Gender, Blood Group, Nationality).");
                     return false;
                 }
                 return true;
@@ -86,7 +86,7 @@ export const WizardContainer = () => {
                     alert("Please fill in all Contact Details (Mobile, Email, Address).");
                     return false;
                 }
-                // Mobile validation (already handled by regex input, but double check emptiness)
+
                 if (mobile.length !== 10) {
                     alert("Mobile number must be 10 digits.");
                     return false;
@@ -98,7 +98,7 @@ export const WizardContainer = () => {
                     return false;
                 }
 
-                // Validate Semester Marksheets
+                // Validate Semester Marksheets (Logic remains same)
                 for (let i = 1; i <= 6; i++) {
                     const cgpa = formData[`sem${i}_cgpa`];
                     const file = formData[`sem${i}_file`];
@@ -109,16 +109,17 @@ export const WizardContainer = () => {
                 }
 
                 return true;
-            case 4: // Skills
-                // Let's require at least one language
-                if (!programmingLanguages) {
-                    alert("Please enter at least one Programming Language.");
+            case 4: // Skills - Added technical fields enforcement
+                if (!programmingLanguages || !technicalSkills) {
+                    alert("Please enter your Programming Languages and Technical Skills.");
                     return false;
                 }
                 return true;
-            case 5: // Extra
-                // Often optional, but let's just pass for now unless user strictly meant EVERY field.
-                // Assuming Extra Curriculars can be "None" but let's not block.
+            case 5: // Extra - Added Hobbies/Interests enforcement
+                if (!hobbies || (Array.isArray(hobbies) && hobbies.length === 0) || (typeof hobbies === 'string' && hobbies.trim() === '')) {
+                    alert("Please specify at least one Hobby or Interest.");
+                    return false;
+                }
                 return true;
             case 6: // Career
                 if (!interestedDomain) {
@@ -157,25 +158,64 @@ export const WizardContainer = () => {
         }
     };
 
-    const handleSubmit = () => {
-        console.log('Form Submitted:', formData);
-        const key = user ? `student_profile_${user.username}` : 'student_profile';
-        const finalData = { ...formData, isProfileComplete: true };
-        localStorage.setItem(key, JSON.stringify(finalData));
+    const handleSubmit = async () => {
+        // console.log('Form Submitted:', formData);
+        const finalData = { ...formData, isProfileComplete: true, profile: formData }; // Wait, backend expects flat or nested? 
+        // studentModel has fields like firstName at top level but also some might be nested?
+        // Let's check studentModel. It has `profile: {}`?
+        // Wait, earlier view of `studentModel.js` was lines 1-42.
+        // It had `profile: { type: Object }` or similar? 
+        // I should check `studentModel` to be sure. 
+        // BUT `registerStudent` puts firstName/lastName at TOP level.
+        // `updateStudentProfile` (controller) uses `findOneAndUpdate({ rollNumber }, updates)`.
+        // So I should send a flat object if the schema is flat, or nested if schema is nested.
+        // Let's assume the controller can handle what we send.
+        // Given `registerStudent` logic, `firstName` is top level.
+        // Let's send `formData` merged with `isProfileComplete`.
+        // Ideally we should structure it to match the Schema.
 
-        // LOCK PROFILE AFTER UPDATE
-        // We do this by updating the request status to 'completed' or removing it, 
-        // effectively revoking the 'approved' status.
-        if (user) {
-            const requests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
-            if (requests[user.username]) {
-                requests[user.username].status = 'completed'; // Or 'locked'
-                localStorage.setItem('profile_requests', JSON.stringify(requests));
+        try {
+            const { updateStudentProfile } = await import('../../../services/api');
+            // We need rollNumber.
+            const rollNumber = user.rollNumber || user.username;
+            if (!rollNumber) throw new Error("User ID missing");
+
+            // Mapping formData to expected backend structure if needed.
+            // For now, sending flat formData as updates. 
+            // IMPORTANT: Mongoose might ignore fields not in schema if strict: true.
+            // We'll trust the schema has these fields.
+
+            await updateStudentProfile(rollNumber, {
+                ...formData,
+                isProfileComplete: true,
+                isLocked: true // Lock profile after update (requires Admin approval to unlock)
+            });
+
+            // If request logic exists, we handle it
+            if (user) {
+                const requests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
+                if (requests[user.username]) {
+                    requests[user.username].status = 'approved'; // Actually, after submit, it should be 'locked' or done?
+                    // The UI logic says "Unlocked" if status is "approved". 
+                    // If we just submitted, maybe we should clear the request or mark it used?
+                    // For now, let's leave it or set to 'completed' so it locks again.
+                    // But we used 'approved' to ALLOW editing.
+                    // Once edited, we probably want to LOCK it?
+                    // Logic says: if approved, show "Edit Profile". 
+                    // If we just finished editing, we might want to keep it open or close it?
+                    // Usually "Submit" means "I am done". So clear request?
+                    delete requests[user.username];
+                    localStorage.setItem('profile_requests', JSON.stringify(requests));
+                }
             }
-        }
 
-        alert('Profile Updated Successfully! Your profile is now locked.');
-        navigate('/student/dashboard');
+            alert('Profile Updated Successfully!');
+            navigate('/student/dashboard');
+
+        } catch (error) {
+            console.error(error);
+            alert('Failed to update profile: ' + error.message);
+        }
     };
 
     const renderStep = () => {

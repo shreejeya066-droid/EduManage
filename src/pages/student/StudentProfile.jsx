@@ -15,17 +15,23 @@ export const StudentProfile = () => {
 
     // Initial Load
     useEffect(() => {
-        if (user) {
-            const key = `student_profile_${user.username}`;
-            const storedProfile = localStorage.getItem(key);
-            if (storedProfile) {
-                setProfileData(JSON.parse(storedProfile));
-            } else {
-                setProfileData(null);
+        const loadProfile = async () => {
+            if (user && user.rollNumber) {
+                try {
+                    const { fetchStudentProfile } = await import('../../services/api');
+                    const data = await fetchStudentProfile(user.rollNumber);
+                    setProfileData(data);
+                } catch (err) {
+                    console.error("Failed to load profile", err);
+                }
             }
+        };
+
+        if (user) {
+            loadProfile();
 
             const requests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
-            const userRequest = requests[user.username];
+            const userRequest = requests[user.username || user.rollNumber];
             if (userRequest) {
                 setRequestStatus(userRequest.status);
             }
@@ -84,29 +90,38 @@ export const StudentProfile = () => {
     );
 
     const renderEditButton = () => {
-        if (!profileData || !profileData.isProfileComplete || !profileData.course) {
+        if (!profileData) return null;
+
+        if (!profileData.isProfileComplete) {
             return (
                 <Button variant="outline" className="w-full justify-center border-green-200 text-green-700 hover:bg-green-50" onClick={handleEditProfile}>
                     <Edit className="h-4 w-4 mr-2" /> Complete Profile
                 </Button>
             );
         }
-        if (requestStatus === 'approved') {
+
+        // Check if unlocked (active or unlocked by admin)
+        // If locked -> Check for pending request
+        if (profileData.isLocked) {
+            if (requestStatus === 'pending') {
+                return (
+                    <Button variant="outline" disabled className="w-full justify-center border-yellow-200 bg-yellow-50 text-yellow-600 opacity-80 cursor-not-allowed">
+                        <Clock className="h-4 w-4 mr-2" /> Request Pending
+                    </Button>
+                );
+            } else {
+                // Locked and no pending request -> Show Request option
+                return (
+                    <Button variant="outline" className="w-full justify-center border-indigo-200 text-indigo-600 hover:bg-indigo-50" onClick={() => setIsEditModalOpen(true)}>
+                        <Lock className="h-4 w-4 mr-2" /> Request Update
+                    </Button>
+                );
+            }
+        } else {
+            // Unlocked -> Allow Edit
             return (
                 <Button variant="outline" className="w-full justify-center border-green-200 text-green-700 hover:bg-green-50" onClick={handleEditProfile}>
                     <Edit className="h-4 w-4 mr-2" /> Edit Profile
-                </Button>
-            );
-        } else if (requestStatus === 'pending') {
-            return (
-                <Button variant="outline" disabled className="w-full justify-center border-yellow-200 bg-yellow-50 text-yellow-600 opacity-80 cursor-not-allowed">
-                    <Clock className="h-4 w-4 mr-2" /> Request Pending
-                </Button>
-            );
-        } else {
-            return (
-                <Button variant="outline" className="w-full justify-center border-indigo-200 text-indigo-600 hover:bg-indigo-50" onClick={() => setIsEditModalOpen(true)}>
-                    <Lock className="h-4 w-4 mr-2" /> Request Update
                 </Button>
             );
         }

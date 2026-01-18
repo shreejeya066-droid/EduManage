@@ -5,7 +5,13 @@ import { Link } from 'react-router-dom';
 import { Users, FileText, TrendingUp, AlertCircle } from 'lucide-react';
 
 export const TeacherDashboard = () => {
-    const { getAllUsers, user } = useAuth();
+    const { getAllUsers, user, refreshUsers } = useAuth();
+
+    // Refresh data for metrics
+    React.useEffect(() => {
+        if (refreshUsers) refreshUsers();
+    }, []);
+
     const students = getAllUsers().filter(u => u.role === 'student');
     const totalStudents = students.length;
     const avgAttendance = Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / totalStudents);

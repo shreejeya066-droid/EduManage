@@ -19,13 +19,19 @@ export const StudentDetailView = () => {
 
         if (found) {
             setStudent(found);
-            // Retrieve shared student profile data (same source as Admin)
-            const storedProfile = localStorage.getItem(`student_profile_${found.username}`);
-            if (storedProfile) {
-                try {
-                    setProfileDetails(JSON.parse(storedProfile));
-                } catch (e) {
-                    console.error("Error parsing profile data", e);
+
+            // Priority: DB Data (if isProfileComplete is explicitly true, or fallback to object itself)
+            if (found.isProfileComplete) {
+                setProfileDetails(found);
+            } else {
+                // Fallback: Check Legacy LocalStorage
+                const storedProfile = localStorage.getItem(`student_profile_${found.username}`);
+                if (storedProfile) {
+                    try {
+                        setProfileDetails(JSON.parse(storedProfile));
+                    } catch (e) {
+                        console.error("Error parsing profile data", e);
+                    }
                 }
             }
         }
@@ -42,21 +48,54 @@ export const StudentDetailView = () => {
 
     // Helper to format camelCase keys to Title Case
     const formatKey = (key) => {
-        // Handle specific known acronyms if needed, or just general regex
         const result = key.replace(/([A-Z])/g, " $1");
         return result.charAt(0).toUpperCase() + result.slice(1);
     };
 
-    const InfoRow = ({ label, value }) => {
-        // If value is an object (like a file reference or nested data), handle it gracefully
-        let displayValue = value;
+    // System keys to exclude from the detailed view
+    const IGNORED_KEYS = [
+        '_id', 'password', '__v', 'createdAt', 'updatedAt',
+        'isFirstLogin', 'isProfileComplete', 'isLocked',
+        'role', 'username', 'id', 'rollNumber'
+    ];
 
-        if (typeof value === 'object' && value !== null) {
+    const InfoRow = ({ label, value, fieldKey }) => {
+        // If value is an object (like a file reference or nested data), handle it
+        let displayValue = value;
+        let isFile = false;
+
+        // Check if this field represents a file
+        // Logic: Key ends with '_file' OR value is a string that looks like a filename (not perfect but helpful)
+        if (fieldKey && (fieldKey.endsWith('_file') || fieldKey.includes('File'))) {
+            isFile = true;
+        }
+
+        if (Array.isArray(value)) {
+            displayValue = value.join(', ');
+        } else if (typeof value === 'object' && value !== null) {
             displayValue = JSON.stringify(value);
         } else if (value === true) {
             displayValue = 'Yes';
         } else if (value === false) {
             displayValue = 'No';
+        } else if (!value) {
+            return null;
+        }
+
+        // If it's a file, render a link
+        if (isFile && typeof value === 'string') {
+            const fileUrl = `http://localhost:5000/uploads/${value}`;
+            displayValue = (
+                <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                    <FileText className="h-4 w-4" />
+                    View File ({value})
+                </a>
+            );
         }
 
         return (
@@ -87,13 +126,13 @@ export const StudentDetailView = () => {
                 </div>
                 <div className="text-center md:text-left flex-1 min-w-0">
                     <h1 className="text-2xl font-bold text-gray-900 truncate">
-                        {profileDetails?.firstName ? `${profileDetails.firstName} ${profileDetails.lastName}` : student.name}
+                        {student.firstName ? `${student.firstName} ${student.lastName}` : (student.name || student.username)}
                     </h1>
-                    <p className="text-gray-500 font-mono">{student.username}</p>
+                    <p className="text-gray-500 font-mono">{student.rollNumber || student.username}</p>
                     <div className="mt-2 flex flex-wrap justify-center md:justify-start gap-2">
-                        {(student.department || profileDetails?.department) && (
+                        {(student.department) && (
                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                {student.department || profileDetails.department}
+                                {student.department}
                             </span>
                         )}
                         <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
@@ -116,14 +155,17 @@ export const StudentDetailView = () => {
                 {profileDetails ? (
                     <div className="p-4">
                         <div className="grid grid-cols-1 gap-x-8">
-                            {/* Dynamically Map ALL keys in profile details */}
-                            {Object.entries(profileDetails).map(([key, value]) => (
-                                <InfoRow
-                                    key={key}
-                                    label={formatKey(key)}
-                                    value={value}
-                                />
-                            ))}
+                            {/* Dynamically Map ALL keys in profile details, excluding system keys */}
+                            {Object.entries(profileDetails)
+                                .filter(([key]) => !IGNORED_KEYS.includes(key))
+                                .map(([key, value]) => (
+                                    <InfoRow
+                                        key={key}
+                                        fieldKey={key}
+                                        label={formatKey(key)}
+                                        value={value}
+                                    />
+                                ))}
                         </div>
                         {Object.keys(profileDetails).length === 0 && (
                             <p className="text-center text-gray-500 py-4">Profile data object is empty.</p>
