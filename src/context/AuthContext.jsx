@@ -229,10 +229,12 @@ export const AuthProvider = ({ children }) => {
         try {
             const { loginTeacher } = await import('../services/api');
             const data = await loginTeacher({ email, password });
+            // Fallback: If backend doesn't send flag, check against default password
+            const isFirstLogin = data.isFirstLogin !== undefined ? data.isFirstLogin : (password === 'password123');
             const sessionUser = { ...data, role: 'teacher' };
             setUser(sessionUser);
             localStorage.setItem('app_user', JSON.stringify(sessionUser));
-            return { success: true, role: 'teacher' };
+            return { success: true, role: 'teacher', isFirstLogin, isProfileComplete: data.isProfileComplete };
         } catch (error) {
             return { success: false, message: error.message };
         }
@@ -275,7 +277,33 @@ export const AuthProvider = ({ children }) => {
             // Async (DB) Student
             loginStudentAsync, registerStudentAsync, updateStudentProfileAsync,
             // Async (DB) Teacher
-            registerTeacherAsync, loginTeacherAsync,
+            registerTeacherAsync, loginTeacherAsync, setupTeacherPasswordAsync: async (username, password) => {
+                try {
+                    const { setupTeacherPassword } = await import('../services/api');
+                    await setupTeacherPassword(username, password);
+                    return { success: true };
+                } catch (error) {
+                    return { success: false, message: error.message };
+                }
+            },
+            updateTeacherProfileAsync: async (profileData) => {
+                // Ensure user is teacher and has ID
+                if (!user || user.role !== 'teacher') return { success: false, message: 'Not authorized' };
+                try {
+                    const { updateTeacherProfile } = await import('../services/api');
+                    // Check if user has _id or id
+                    const id = user._id || user.id;
+                    if (!id) return { success: false, message: 'User ID missing' };
+
+                    const updatedUser = await updateTeacherProfile(id, profileData);
+                    const sessionUser = { ...user, ...updatedUser };
+                    setUser(sessionUser);
+                    localStorage.setItem('app_user', JSON.stringify(sessionUser));
+                    return { success: true };
+                } catch (error) {
+                    return { success: false, message: error.message };
+                }
+            },
             // Async (DB) Admin
             loginAdminAsync, registerAdminAsync, updateAdminProfileAsync, changePassword,
             refreshUsers: fetchAllUsers,

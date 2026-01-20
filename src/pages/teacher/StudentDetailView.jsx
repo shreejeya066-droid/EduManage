@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
-import { User, FileText, ArrowLeft, Shield } from 'lucide-react';
+import { User, FileText, ArrowLeft, Shield, GraduationCap, Trophy, Briefcase, Code } from 'lucide-react';
 
 export const StudentDetailView = () => {
     const { id } = useParams(); // Start with username or ID
@@ -142,42 +142,114 @@ export const StudentDetailView = () => {
                 </div>
             </div>
 
-            {/* Dynamic Profile Content */}
-            <Card className="overflow-hidden">
-                <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Complete Profile Data
-                    </h3>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">Read Only</span>
-                </div>
+            {/* Structured Profile Content */}
+            {profileDetails ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
+                    {/* Row 1 */}
+                    <DetailSection
+                        title="Personal Details"
+                        icon={<User className="h-4 w-4" />}
+                        data={profileDetails}
+                        fields={['firstName', 'lastName', 'dob', 'gender', 'bloodGroup', 'nationality', 'religion', 'fatherName', 'motherName']}
+                    />
+                    <DetailSection
+                        title="Contact Information"
+                        icon={<FileText className="h-4 w-4" />} // Using FileText as generic placeholder if needed, or import Phone/Mail
+                        data={profileDetails}
+                        fields={['email', 'phone', 'mobile', 'address']}
+                    />
+                    <DetailSection
+                        title="Academic Details"
+                        icon={<GraduationCap className="h-4 w-4" />}
+                        data={profileDetails}
+                        fields={[
+                            'rollNumber', 'course', 'department', 'yearOfStudy', 'semester', 'yearOfJoining',
+                            'tenthPercent', 'twelfthPercent', 'cgpa', 'backlogs',
+                            'sem1_cgpa', 'sem1_file',
+                            'sem2_cgpa', 'sem2_file',
+                            'sem3_cgpa', 'sem3_file',
+                            'sem4_cgpa', 'sem4_file',
+                            'sem5_cgpa', 'sem5_file',
+                            'sem6_cgpa', 'sem6_file'
+                        ]}
+                    />
 
-                {profileDetails ? (
-                    <div className="p-4">
-                        <div className="grid grid-cols-1 gap-x-8">
-                            {/* Dynamically Map ALL keys in profile details, excluding system keys */}
-                            {Object.entries(profileDetails)
-                                .filter(([key]) => !IGNORED_KEYS.includes(key))
-                                .map(([key, value]) => (
-                                    <InfoRow
-                                        key={key}
-                                        fieldKey={key}
-                                        label={formatKey(key)}
-                                        value={value}
-                                    />
-                                ))}
-                        </div>
-                        {Object.keys(profileDetails).length === 0 && (
-                            <p className="text-center text-gray-500 py-4">Profile data object is empty.</p>
-                        )}
-                    </div>
-                ) : (
-                    <div className="p-12 text-center text-gray-500">
-                        <p className="text-lg">Student has not completed their profile yet.</p>
-                        <p className="text-sm mt-2">Only basic login information is available.</p>
-                    </div>
-                )}
-            </Card>
+                    {/* Row 2 */}
+                    <DetailSection
+                        title="Extracurricular & Activities"
+                        icon={<Trophy className="h-4 w-4" />}
+                        data={profileDetails}
+                        fields={['sports', 'clubs', 'achievements', 'events', 'hobbies']}
+                    />
+                    <DetailSection
+                        title="Skills & Competencies"
+                        icon={<Code className="h-4 w-4" />}
+                        data={profileDetails}
+                        fields={['programmingLanguages', 'technicalSkills', 'tools', 'certifications']}
+                    />
+                    <DetailSection
+                        title="Career & Internships"
+                        icon={<Briefcase className="h-4 w-4" />}
+                        data={profileDetails}
+                        fields={['internshipCompany', 'internshipDomain', 'placementWillingness', 'interestedDomain', 'prefLocation', 'higherStudies', 'higherStudiesDetails']}
+                    />
+                </div>
+            ) : (
+                <div className="p-12 text-center text-gray-500 bg-white rounded-xl shadow-sm border">
+                    <p className="text-lg">Student has not completed their profile yet.</p>
+                    <p className="text-sm mt-2">Only basic login information is available.</p>
+                </div>
+            )}
         </div>
+    );
+};
+
+// Helper Component for Sections
+const DetailSection = ({ title, icon, data, fields }) => {
+    return (
+        <Card className="flex flex-col h-full overflow-hidden hover:shadow-md transition-shadow">
+            <div className="px-4 py-3 bg-gray-50 border-b flex items-center gap-2 font-semibold text-gray-800">
+                <span className="text-indigo-600">{icon}</span>
+                {title}
+            </div>
+            <div className="p-4 space-y-3 text-sm flex-1">
+                {fields.map(key => {
+                    const val = data[key];
+                    if (!val && val !== 0) return null;
+
+                    const label = key.replace(/([A-Z])/g, " $1")
+                        .replace(/sem(\d+)_([a-z]+)/gi, "Sem $1 $2") // Format sem1_cgpa -> Sem 1 cgpa
+                        .trim();
+
+                    // Check if this is a file field
+                    const isFile = key.toLowerCase().includes('file');
+
+                    return (
+                        <div key={key} className="flex flex-col border-b border-gray-100 last:border-0 pb-2 last:pb-0">
+                            <span className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">
+                                {label}
+                            </span>
+                            <span className="font-medium text-gray-900 break-words">
+                                {isFile ? (
+                                    <a
+                                        href={`http://localhost:5000/uploads/${val}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"
+                                    >
+                                        <FileText className="h-3 w-3" /> View Document
+                                    </a>
+                                ) : (
+                                    Array.isArray(val) ? val.join(', ') : val.toString()
+                                )}
+                            </span>
+                        </div>
+                    );
+                })}
+                {fields.every(f => !data[f] && data[f] !== 0) && (
+                    <p className="text-gray-400 italic text-center py-2">No details provided</p>
+                )}
+            </div>
+        </Card>
     );
 };

@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/Button';
 export const TeacherCreatePassword = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { setupPassword } = useAuth();
+    const { setupTeacherPasswordAsync } = useAuth();
     const [username, setUsername] = useState('');
 
     // Form state
@@ -25,7 +25,8 @@ export const TeacherCreatePassword = () => {
         setUsername(location.state.username);
     }, [location, navigate]);
 
-    const handleSubmit = (e) => {
+    // Action
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
 
@@ -46,14 +47,13 @@ export const TeacherCreatePassword = () => {
             return;
         }
 
-        // Action
-        const success = setupPassword(username, password);
-        if (success) {
+        const result = await setupTeacherPasswordAsync(username, password);
+        if (result.success) {
             // Updated user is now "logged in" but isFirstLogin is still true in my logic
             // so we redirect to profile setup
             navigate('/teacher/profile-setup');
         } else {
-            setError('Failed to update password. Please try again.');
+            setError(result.message || 'Failed to update password. Please try again.');
         }
     };
 

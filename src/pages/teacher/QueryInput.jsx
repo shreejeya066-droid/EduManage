@@ -1,8 +1,9 @@
+import eduIcon from '../../assets/edu-icon.png';
 import React, { useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { Send, Bot } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 export const QueryInput = () => {
     const [query, setQuery] = useState('');
@@ -43,7 +44,7 @@ export const QueryInput = () => {
                         className="flex-1"
                     />
                     <Button type="submit" disabled={loading || !query}>
-                        {loading ? 'Analyzing...' : <><Send className="mr-2 h-4 w-4" /> Ask AI</>}
+                        {loading ? 'Analyzing...' : <><Send className="mr-2 h-4 w-4" /> search</>}
                     </Button>
                 </form>
             </Card>
@@ -52,8 +53,8 @@ export const QueryInput = () => {
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <Card className="border-indigo-100 bg-indigo-50/50 p-6">
                         <div className="flex gap-4 mb-4">
-                            <div className="mt-1 h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white shrink-0">
-                                <Bot className="h-5 w-5" />
+                            <div className="mt-1 shrink-0">
+                                <img src={eduIcon} alt="Analysis Result" className="h-12 w-12" />
                             </div>
                             <div className="space-y-1">
                                 <h4 className="font-semibold text-indigo-900">Analysis Result</h4>

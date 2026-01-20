@@ -73,7 +73,10 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 )}
             >
                 <div className="flex h-14 items-center justify-between border-b px-6 font-bold text-xl text-indigo-600 flex-shrink-0">
-                    <span>EduManage</span>
+                    <div className="flex items-center gap-2">
+                        <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
+                        <span>EduManage</span>
+                    </div>
                     <button onClick={onClose} className="text-gray-500 md:hidden">
                         <X className="h-5 w-5" />
                     </button>

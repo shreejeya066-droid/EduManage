@@ -26,7 +26,7 @@ export const StudentList = () => {
     if (searchTerm) {
         students = students.filter(student =>
             (student.name && student.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            student.username.toLowerCase().includes(searchTerm.toLowerCase())
+            (student.username && student.username.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }
 
@@ -103,7 +103,6 @@ export const StudentList = () => {
             if (num === 1) return 'I (1st)';
             if (num === 2) return 'II (2nd)';
             if (num === 3) return 'III (3rd)';
-            if (num === 4) return 'IV (4th)';
             return `${num}th`;
         };
 

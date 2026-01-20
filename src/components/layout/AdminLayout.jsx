@@ -36,9 +36,7 @@ export const AdminLayout = () => {
             <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
                 <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="bg-purple-600 p-2 rounded-lg">
-                            <ShieldCheck className="h-6 w-6 text-white" />
-                        </div>
+                        <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
                         <span className="text-xl font-bold text-gray-900 tracking-tight">
                             EduManage <span className="text-purple-600">Admin</span>
                         </span>

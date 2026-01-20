@@ -7,15 +7,11 @@ import { useAuth } from '../../context/AuthContext';
 import { User, Mail, BookOpen, Building } from 'lucide-react';
 
 export const TeacherProfile = () => {
-    const { user, requestProfileUpdate, getPendingRequest, loading } = useAuth();
+    const { user, updateTeacherProfileAsync } = useAuth();
     const location = useLocation();
 
     const [isEditing, setIsEditing] = useState(false);
-    const [pendingRequest, setPendingRequest] = useState(null);
-
-    // Combined local state: starts with User data, potentially overridden by pending request for preview?
-    // Requirement: "View details". If pending, maybe show "Current" and "Requested".
-    // For now, let's show Current Data, and if editing, pre-fill with Current.
+    const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -31,37 +27,36 @@ export const TeacherProfile = () => {
             setFormData({
                 name: user.name || '',
                 email: user.email || '',
-                phone: user.phone || '',
+                phone: user.mobile || user.phone || '', // Handle different field names
                 department: user.department || '',
                 qualification: user.qualification || '',
                 experience: user.experience || ''
             });
-
-            // Check for pending requests
-            const req = getPendingRequest(user.username);
-            setPendingRequest(req);
         }
-    }, [user, getPendingRequest]);
+    }, [user]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSave = () => {
-        // Create change object (diff) or just send all editable fields
-        const changes = {
-            name: formData.name, // Usually name is fixed but allowing request
-            email: formData.email,
-            phone: formData.phone,
+    const handleSave = async () => {
+        setLoading(true);
+        // Create update object
+        const updates = {
+            mobile: formData.phone, // Map phone to mobile for DB
             qualification: formData.qualification,
             experience: formData.experience
+            // Name/Email/Dept usually restricted or require admin ops
         };
 
-        const success = requestProfileUpdate(user.username, changes);
-        if (success) {
-            setPendingRequest({ changes, status: 'pending' }); // Optimistic update
+        const result = await updateTeacherProfileAsync(updates);
+        setLoading(false);
+
+        if (result.success) {
             setIsEditing(false);
-            alert('Profile update requested. Waiting for Admin approval.');
+            alert('Profile updated successfully!');
+        } else {
+            alert('Failed to update profile: ' + result.message);
         }
     };
 
@@ -71,26 +66,10 @@ export const TeacherProfile = () => {
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">My Profile</h2>
-                {!pendingRequest && (
-                    <Button variant={isEditing ? "ghost" : "primary"} onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
-                        {isEditing ? "Cancel" : "Edit Profile"}
-                    </Button>
-                )}
+                <Button variant={isEditing ? "ghost" : "primary"} onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}>
+                    {isEditing ? "Cancel" : "Edit Profile"}
+                </Button>
             </div>
-
-            {/* Pending Request Banner */}
-            {pendingRequest && (
-                <div className="bg-amber-50 border-l-4 border-amber-400 p-4">
-                    <div className="flex">
-                        <div className="ml-3">
-                            <h3 className="text-sm font-medium text-amber-800">Update Pending Approval</h3>
-                            <div className="mt-2 text-sm text-amber-700">
-                                <p>You have requested changes to your profile. You cannot make further edits until an administrator reviews your request.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <div className="grid gap-6 md:grid-cols-3">
                 <div className="space-y-6">
@@ -166,7 +145,7 @@ export const TeacherProfile = () => {
 
                     {isEditing && (
                         <div className="flex justify-end">
-                            <Button onClick={handleSave}>Request Changes</Button>
+                            <Button onClick={handleSave} disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</Button>
                         </div>
                     )}
                 </div>

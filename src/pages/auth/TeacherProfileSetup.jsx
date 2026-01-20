@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
 export const TeacherProfileSetup = () => {
-    const { user, completeProfile } = useAuth();
+    const { user, updateTeacherProfileAsync } = useAuth();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -32,7 +32,7 @@ export const TeacherProfileSetup = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Basic validation
@@ -41,15 +41,17 @@ export const TeacherProfileSetup = () => {
             return;
         }
 
-        const success = completeProfile({
+        const result = await updateTeacherProfileAsync({
             phone: formData.phone,
             qualification: formData.qualification,
             experience: formData.experience,
             // Add any other mapped fields
         });
 
-        if (success) {
+        if (result.success) {
             navigate('/teacher/dashboard');
+        } else {
+            alert('Failed to update profile: ' + result.message);
         }
     };
 

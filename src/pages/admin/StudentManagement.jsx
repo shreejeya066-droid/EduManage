@@ -94,13 +94,29 @@ export const StudentManagement = () => {
         return () => window.removeEventListener('focus', loadRequests);
     }, [activeTab]);
 
-    const handleRequestAction = (username, action) => {
-        const storedRequests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
-        if (storedRequests[username]) {
-            storedRequests[username].status = action === 'approve' ? 'approved' : 'rejected';
-            localStorage.setItem('profile_requests', JSON.stringify(storedRequests));
-            setProfileRequests(storedRequests);
-            alert(`Request ${action}d. Student ${username} can now edit their profile.`);
+    const handleRequestAction = async (username, action) => {
+        try {
+            const storedRequests = JSON.parse(localStorage.getItem('profile_requests') || '{}');
+
+            if (action === 'approve') {
+                const { updateStudentProfile } = await import('../../services/api');
+                // Unlock the student profile in the database
+                await updateStudentProfile(username, { isLocked: false });
+            }
+
+            if (storedRequests[username]) {
+                storedRequests[username].status = action === 'approve' ? 'approved' : 'rejected';
+                localStorage.setItem('profile_requests', JSON.stringify(storedRequests));
+                setProfileRequests(storedRequests);
+
+                // Refresh the list to reflect the unlocked status immediately
+                fetchStudentsData();
+
+                alert(`Request ${action}d. Student ${username} can now edit their profile.`);
+            }
+        } catch (error) {
+            console.error("Error updating request:", error);
+            alert("Failed to process request in database.");
         }
     };
 
@@ -240,7 +256,7 @@ export const StudentManagement = () => {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{name}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${student.isLocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                                                            {student.isLocked ? 'Locked' : 'Active'}
+                                                            {student.isLocked ? 'Completed & Locked' : 'Active'}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -279,28 +295,28 @@ export const StudentManagement = () => {
                     <div className="space-y-6">
                         <div className="flex items-center space-x-4 border-b pb-4">
                             <div className="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
-                                {(selectedStudent.username || selectedStudent.rollNumber || '?').substring(0, 2)}
+                                {(selectedStudent.rollNumber || selectedStudent.username || '?').substring(0, 2)}
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900">
-                                    {selectedStudent.profile?.firstName
-                                        ? `${selectedStudent.profile.firstName} ${selectedStudent.profile.lastName}`
+                                    {selectedStudent.firstName
+                                        ? `${selectedStudent.firstName} ${selectedStudent.lastName}`
                                         : (selectedStudent.name || selectedStudent.username || selectedStudent.rollNumber)}
                                 </h3>
-                                <p className="text-gray-500">{selectedStudent.username || selectedStudent.rollNumber}</p>
+                                <p className="text-gray-500">{selectedStudent.rollNumber || selectedStudent.username}</p>
                             </div>
                         </div>
 
-                        {selectedStudent.profile ? (
+                        {selectedStudent.isProfileComplete || selectedStudent.firstName ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <InfoItem label="Roll Number" value={selectedStudent.username || selectedStudent.rollNumber} />
-                                <InfoItem label="Year of Joining" value={selectedStudent.profile.yearOfJoining || 'N/A'} />
-                                <InfoItem label="Course" value={selectedStudent.profile.course} />
-                                <InfoItem label="Department" value={selectedStudent.profile.department} />
-                                <InfoItem label="Email" value={selectedStudent.profile.email} />
-                                <InfoItem label="Mobile" value={selectedStudent.profile.mobile} />
-                                <InfoItem label="Gender" value={selectedStudent.profile.gender} />
-                                <InfoItem label="DOB" value={selectedStudent.profile.dob} />
+                                <InfoItem label="Roll Number" value={selectedStudent.rollNumber || selectedStudent.username} />
+                                <InfoItem label="Year of Joining" value={selectedStudent.yearOfJoining || 'N/A'} />
+                                <InfoItem label="Course" value={selectedStudent.course} />
+                                <InfoItem label="Department" value={selectedStudent.department} />
+                                <InfoItem label="Email" value={selectedStudent.email} />
+                                <InfoItem label="Mobile" value={selectedStudent.phone} />
+                                <InfoItem label="Gender" value={selectedStudent.gender} />
+                                <InfoItem label="DOB" value={selectedStudent.dob} />
                             </div>
                         ) : (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-yellow-800">

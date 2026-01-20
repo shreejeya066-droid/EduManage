@@ -12,6 +12,15 @@ export const TeacherDashboard = () => {
         if (refreshUsers) refreshUsers();
     }, []);
 
+    // Force Profile Check
+    React.useEffect(() => {
+        if (user && user.role === 'teacher' && user.isProfileComplete === false) {
+            // Since we can't use useNavigate inside the component body easily without re-rendering issues or structure changes,
+            // let's assume this component is wrapped in router context.
+            window.location.href = '/teacher/profile-setup'; // Strong redirect
+        }
+    }, [user]);
+
     const students = getAllUsers().filter(u => u.role === 'student');
     const totalStudents = students.length;
     const avgAttendance = Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / totalStudents);
@@ -24,7 +33,6 @@ export const TeacherDashboard = () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h2>
-                    <p className="text-gray-500">Welcome, {user?.name || 'Teacher'}</p>
                 </div>
                 <div className="bg-indigo-100 text-indigo-800 text-sm font-medium px-3 py-1 rounded-full border border-indigo-200">
                     Teacher – View Only

@@ -5,11 +5,14 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
+import { Eye, EyeOff } from 'lucide-react';
+
 export const TeacherLogin = () => {
     // Modes: 'check_id', 'password' (removed 'register')
     const [step, setStep] = useState('check_id');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState(null);
 
     // Auth
@@ -44,10 +47,8 @@ export const TeacherLogin = () => {
 
         } catch (err) {
             console.error(err);
-            setError('Failed to check status. Using fallback login.');
-            setStep('password'); // Fallback to try login anyway if network fails? Or block?
-            // Safer to block or allow password if status check failed but user might exist.
-            // But UI asks for password step next anyway.
+            // setError('Failed to check status. Using fallback login.'); // Suppressed to avoid confusing user
+            setStep('password'); // Fallback to try login anyway
         }
     };
 
@@ -65,7 +66,14 @@ export const TeacherLogin = () => {
         const result = await loginTeacherAsync(username, password);
 
         if (result.success) {
-            navigate('/teacher/dashboard');
+            if (result.isFirstLogin) {
+                navigate('/teacher/create-password', { state: { username: username } });
+            } else if (result.isProfileComplete === false) {
+                // Force profile completion if not first login but profile incomplete (e.g. skipped or old data)
+                navigate('/teacher/profile-setup');
+            } else {
+                navigate('/teacher/dashboard');
+            }
         } else {
             setError('Login Failed: ' + (result.message || 'Invalid credentials'));
         }
@@ -126,11 +134,24 @@ export const TeacherLogin = () => {
                         <div className="space-y-4">
                             <Input
                                 label="Password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 placeholder="Enter your password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 autoFocus
+                                suffix={
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-5 w-5" />
+                                        ) : (
+                                            <Eye className="h-5 w-5" />
+                                        )}
+                                    </button>
+                                }
                             />
                         </div>
 

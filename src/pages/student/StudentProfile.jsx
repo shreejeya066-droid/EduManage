@@ -39,7 +39,11 @@ export const StudentProfile = () => {
     }, [user]);
 
     const handleEditProfile = () => {
-        if (requestStatus === 'approved' || !profileData || !profileData.isProfileComplete || !profileData.course) {
+        // Allow edit if:
+        // 1. Profile is explicitly unlocked (isLocked === false)
+        // 2. OR Legacy: requestStatus is approved
+        // 3. OR Profile is incomplete
+        if (!profileData?.isLocked || requestStatus === 'approved' || !profileData?.isProfileComplete) {
             navigate('/student/profile-wizard');
         }
     };
@@ -100,28 +104,27 @@ export const StudentProfile = () => {
             );
         }
 
-        // Check if unlocked (active or unlocked by admin)
-        // If locked -> Check for pending request
-        if (profileData.isLocked) {
-            if (requestStatus === 'pending') {
-                return (
-                    <Button variant="outline" disabled className="w-full justify-center border-yellow-200 bg-yellow-50 text-yellow-600 opacity-80 cursor-not-allowed">
-                        <Clock className="h-4 w-4 mr-2" /> Request Pending
-                    </Button>
-                );
-            } else {
-                // Locked and no pending request -> Show Request option
-                return (
-                    <Button variant="outline" className="w-full justify-center border-indigo-200 text-indigo-600 hover:bg-indigo-50" onClick={() => setIsEditModalOpen(true)}>
-                        <Lock className="h-4 w-4 mr-2" /> Request Update
-                    </Button>
-                );
-            }
-        } else {
-            // Unlocked -> Allow Edit
+        // Check if unlocked (active or unlocked by admin OR locally approved)
+        if (!profileData.isLocked || requestStatus === 'approved') {
             return (
                 <Button variant="outline" className="w-full justify-center border-green-200 text-green-700 hover:bg-green-50" onClick={handleEditProfile}>
                     <Edit className="h-4 w-4 mr-2" /> Edit Profile
+                </Button>
+            );
+        }
+
+        // It is locked and NOT approved
+        if (requestStatus === 'pending') {
+            return (
+                <Button variant="outline" disabled className="w-full justify-center border-yellow-200 bg-yellow-50 text-yellow-600 opacity-80 cursor-not-allowed">
+                    <Clock className="h-4 w-4 mr-2" /> Request Pending
+                </Button>
+            );
+        } else {
+            // Locked and no pending/approved request -> Show Request option
+            return (
+                <Button variant="outline" className="w-full justify-center border-indigo-200 text-indigo-600 hover:bg-indigo-50" onClick={() => setIsEditModalOpen(true)}>
+                    <Lock className="h-4 w-4 mr-2" /> Request Update
                 </Button>
             );
         }

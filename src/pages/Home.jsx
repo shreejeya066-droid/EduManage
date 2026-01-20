@@ -10,6 +10,9 @@ export const Home = () => {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-purple-100 p-4">
             <div className="mb-8 text-center">
+                <div className="flex justify-center mb-6">
+                    <img src="/logo.png" alt="Logo" className="h-24 w-24 object-contain shadow-lg rounded-full bg-white p-2" />
+                </div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-indigo-900 sm:text-5xl">
                     EduMana<span className="text-indigo-600">ge</span>
                 </h1>
@@ -83,26 +86,26 @@ export const Home = () => {
                 {/* <div className="mt-8 text-center text-xs text-blue-400">
                     <p>For demonstration purposes, please use the Unified Student Login button.</p>
                 </div> */}
-            
-                
+
+
                 <div className="mt-8 text-center border-t pt-4">
-                     <p className="text-sm text-gray-500 mb-2">Developer Tools</p>
-                     <div className="flex justify-center gap-4">
-                        <Button 
-                            variant="ghost" 
+                    <p className="text-sm text-gray-500 mb-2">Developer Tools</p>
+                    <div className="flex justify-center gap-4">
+                        <Button
+                            variant="ghost"
                             onClick={() => navigate("/test-backend")}
                             className="text-indigo-600 hover:bg-indigo-50"
                         >
                             Test Student Fetch
                         </Button>
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             onClick={() => navigate("/test-teacher-db")}
                             className="text-purple-600 hover:bg-purple-50"
                         >
                             Test Teacher DB Storage
                         </Button>
-                     </div>
+                    </div>
                 </div>
             </Card>
         </div>

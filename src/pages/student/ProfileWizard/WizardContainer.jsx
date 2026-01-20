@@ -19,38 +19,62 @@ export const WizardContainer = () => {
     const { user } = useAuth(); // Assuming useAuth imported above, need to add import
 
     const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState(() => {
-        // Initialize from localStorage if exists (for Edit Profile flow)
-        // Use user-specific key if user exists
-        const key = user ? `student_profile_${user.username}` : 'student_profile';
-        const saved = localStorage.getItem(key);
-        if (saved) {
-            return JSON.parse(saved);
-        }
-        return {
-            // Step 1
-            firstName: '', lastName: '', fatherName: '', motherName: '',
-            dob: '', gender: '', bloodGroup: '', nationality: '', religion: '', yearOfStudy: '',
-            // Step 2
-            mobile: '', altMobile: '', email: '', address: '',
-            // Step 3
-            course: '', department: '', section: '', rollNumber: user?.rollNumber || user?.username || '', yearOfJoining: '',
-            tenthPercent: '', twelfthPercent: '', cgpa: '', semester: '', backlogs: '0', diplomaPercent: '',
-            sem1_cgpa: '', sem1_file: '',
-            sem2_cgpa: '', sem2_file: '',
-            sem3_cgpa: '', sem3_file: '',
-            sem4_cgpa: '', sem4_file: '',
-            sem5_cgpa: '', sem5_file: '',
-            sem6_cgpa: '', sem6_file: '',
-            // Step 4 (Skills + Internship)
-            programmingLanguages: '', technicalSkills: '', tools: '', certifications: '', certProof: '',
-            internshipCompany: '', internshipType: '', internshipDuration: '', internshipDomain: '', internshipCert: '',
-            // Step 5
-            sports: '', clubs: '', achievements: '', events: '', otherActivities: '', hobbies: [],
-            // Step 6 (Career)
-            higherStudies: 'No', higherStudiesDetails: '', placementWillingness: 'Yes', interestedDomain: '', prefLocation: ''
-        };
+    const [formData, setFormData] = useState({
+        // Step 1
+        firstName: '', lastName: '', fatherName: '', motherName: '',
+        dob: '', gender: '', bloodGroup: '', nationality: '', religion: '', yearOfStudy: '',
+        // Step 2
+        mobile: '', altMobile: '', email: '', address: '',
+        // Step 3
+        course: '', department: '', section: '', rollNumber: user?.rollNumber || user?.username || '', yearOfJoining: '',
+        tenthPercent: '', twelfthPercent: '', cgpa: '', semester: '', backlogs: '0', diplomaPercent: '',
+        sem1_cgpa: '', sem1_file: '',
+        sem2_cgpa: '', sem2_file: '',
+        sem3_cgpa: '', sem3_file: '',
+        sem4_cgpa: '', sem4_file: '',
+        sem5_cgpa: '', sem5_file: '',
+        sem6_cgpa: '', sem6_file: '',
+        // Step 4 (Skills + Internship)
+        programmingLanguages: '', technicalSkills: '', tools: '', certifications: '', certProof: '',
+        internshipCompany: '', internshipType: '', internshipDuration: '', internshipDomain: '', internshipCert: '',
+        // Step 5
+        sports: '', clubs: '', achievements: '', events: '', otherActivities: '', hobbies: [],
+        // Step 6 (Career)
+        higherStudies: 'No', higherStudiesDetails: '', placementWillingness: 'Yes', interestedDomain: '', prefLocation: ''
     });
+
+    useEffect(() => {
+        // Fetch existing profile data from backend to pre-fill the form
+        const loadExistingData = async () => {
+            if (user && (user.rollNumber || user.username)) {
+                try {
+                    const { fetchStudentProfile } = await import('../../../services/api');
+                    const data = await fetchStudentProfile(user.rollNumber || user.username);
+
+                    if (data) {
+                        // Merge backend data with initial state to ensure all fields exist
+                        setFormData(prev => ({
+                            ...prev,
+                            ...data,
+                            // Ensure arrays/objects are handled if needed, usually direct spread works for simple fields
+                            hobbies: Array.isArray(data.hobbies) ? data.hobbies : (data.hobbies ? [data.hobbies] : []),
+                            // Ensure mapped fields are correct if backend names differ (e.g. mobile vs phone)
+                            mobile: data.mobile || data.phone || prev.mobile
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Failed to load existing profile for editing", error);
+                    // Fallback to localStorage if backend fetch fails
+                    const key = `student_profile_${user.username}`;
+                    const saved = localStorage.getItem(key);
+                    if (saved) {
+                        setFormData(prev => ({ ...prev, ...JSON.parse(saved) }));
+                    }
+                }
+            }
+        };
+        loadExistingData();
+    }, [user]);
 
     const totalSteps = 6;
 

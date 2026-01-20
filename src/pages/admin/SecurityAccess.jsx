@@ -11,11 +11,8 @@ export const SecurityAccess = () => {
     const [newYear, setNewYear] = useState('');
     const [yearError, setYearError] = useState('');
 
-    // Mock Locked Accounts
-    const [lockedAccounts, setLockedAccounts] = useState([
-        { id: 1, name: 'Bob Brown', role: 'Student', reason: 'Too many failed login attempts', time: '10 mins ago' },
-        { id: 2, name: 'Mary White', role: 'Teacher', reason: 'Admin locked', time: '2 hours ago' },
-    ]);
+
+    const [lockedAccounts, setLockedAccounts] = useState([]);
 
     // Mock OTP Config
     const [otpConfig, setOtpConfig] = useState({

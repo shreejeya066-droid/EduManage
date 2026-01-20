@@ -159,6 +159,19 @@ export const fetchTeachers = async () => {
     }
 };
 
+export const updateTeacherProfile = async (id, profileData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Update failed');
+        return data;
+    } catch (error) { throw error; }
+};
+
 // Admin API Calls
 export const loginAdmin = async (credentials) => {
     try {
