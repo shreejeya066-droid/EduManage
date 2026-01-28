@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Users, GraduationCap, ShieldAlert, UserCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -24,8 +24,12 @@ const StatCard = ({ title, value, label, icon: Icon, color, linkTo }) => {
 };
 
 export const AdminDashboard = () => {
-    const { getAllUsers } = useAuth();
+    const { getAllUsers, refreshUsers } = useAuth();
     const allUsers = getAllUsers();
+
+    useEffect(() => {
+        refreshUsers();
+    }, []);
 
     const studentsCount = allUsers.filter(u => u.role === 'student').length;
     const teachersCount = allUsers.filter(u => u.role === 'teacher').length;
@@ -67,9 +71,17 @@ export const AdminDashboard = () => {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-                <p className="text-gray-500">Welcome to the system administration portal.</p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+                    <p className="text-gray-500">Welcome to the system administration portal.</p>
+                </div>
+                <button
+                    onClick={() => refreshUsers()}
+                    className="px-4 py-2 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"
+                >
+                    Refresh Data
+                </button>
             </div>
 
             {/* Stats Grid */}
