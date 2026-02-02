@@ -98,6 +98,16 @@ export const TeacherDashboard = () => {
                     </Card>
                 </Link>
 
+                <Link to="/teacher/query" className="block">
+                    <Card className="hover:bg-purple-50 transition-colors cursor-pointer h-full flex flex-col items-center justify-center p-6 text-center space-y-2 border-purple-100">
+                        <div className="p-3 bg-purple-100 rounded-full text-purple-600">
+                            <AlertCircle className="h-8 w-8" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">Smart Query Search</h3>
+                        <p className="text-sm text-gray-500">Ask natural language questions</p>
+                    </Card>
+                </Link>
+
                 <Link to="/teacher/notifications" className="block">
                     <Card className="hover:bg-amber-50 transition-colors cursor-pointer h-full flex flex-col items-center justify-center p-6 text-center space-y-2 border-amber-100">
                         <div className="p-3 bg-amber-100 rounded-full text-amber-600">
