@@ -9,20 +9,15 @@ import { useAuth } from '../../context/AuthContext';
 export const SecurityAccess = () => {
     const { allowedYears, updateAllowedYears } = useAuth();
     const [newYear, setNewYear] = useState('');
-    const [yearError, setYearError] = useState('');
-
-
-    const [lockedAccounts, setLockedAccounts] = useState([]);
-
     // Mock OTP Config
     const [otpConfig, setOtpConfig] = useState({
         expiry: 5,
         maxAttempts: 3
     });
+    const [yearError, setYearError] = useState('');
 
-    const handleUnlock = (id) => {
-        setLockedAccounts(lockedAccounts.filter(acc => acc.id !== id));
-    };
+
+
 
     const handleAddYear = () => {
         setYearError('');
@@ -55,45 +50,7 @@ export const SecurityAccess = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                {/* Locked Accounts Section */}
-                <Card className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-red-100 rounded-lg text-red-600">
-                            <ShieldAlert className="h-6 w-6" />
-                        </div>
-                        <h2 className="text-lg font-semibold text-gray-900">Locked Accounts ({lockedAccounts.length})</h2>
-                    </div>
 
-                    {lockedAccounts.length > 0 ? (
-                        <div className="space-y-4">
-                            {lockedAccounts.map((account) => (
-                                <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-                                    <div>
-                                        <p className="font-medium text-gray-900">{account.name} <span className="text-xs text-gray-500">({account.role})</span></p>
-                                        <p className="text-xs text-red-600 flex items-center gap-1 mt-1">
-                                            <AlertTriangle className="h-3 w-3" /> {account.reason}
-                                        </p>
-                                        <p className="text-xs text-gray-400 mt-1">{account.time}</p>
-                                    </div>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleUnlock(account.id)}
-                                        className="text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
-                                    >
-                                        <Unlock className="h-4 w-4 mr-1" />
-                                        Unlock
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8 text-gray-500">
-                            <ShieldAlert className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                            <p>No locked accounts.</p>
-                        </div>
-                    )}
-                </Card>
 
                 {/* OTP Configuration Section */}
                 <Card className="p-6">
@@ -149,7 +106,7 @@ export const SecurityAccess = () => {
                 </Card>
 
                 {/* Admission Config Section */}
-                <Card className="p-6 lg:col-span-2">
+                <Card className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
                             <Calendar className="h-6 w-6" />

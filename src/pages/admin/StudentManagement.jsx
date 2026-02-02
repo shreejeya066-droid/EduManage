@@ -61,11 +61,6 @@ export const StudentManagement = () => {
 
 
     const handleViewProfile = (student) => {
-        // Profile data is now part of student object from DB (hopefully)
-        // Or we might need to fetch it? 
-        // The mock implementation had separate profile storage.
-        // DB implementation has profile fields in Student model.
-        // So student object should have fields like firstName, lastName etc.
         setSelectedStudent(student);
     };
 

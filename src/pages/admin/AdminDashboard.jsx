@@ -60,13 +60,7 @@ export const AdminDashboard = () => {
             icon: UserCheck,
             color: '#2563EB' // Blue
         },
-        {
-            title: 'Locked / Inactive',
-            value: '20',
-            label: 'Requires attention',
-            icon: ShieldAlert,
-            color: '#DC2626' // Red
-        }
+
     ];
 
     return (
