@@ -88,25 +88,7 @@ export const Home = () => {
                 </div> */}
 
 
-                <div className="mt-8 text-center border-t pt-4">
-                    <p className="text-sm text-gray-500 mb-2">Developer Tools</p>
-                    <div className="flex justify-center gap-4">
-                        <Button
-                            variant="ghost"
-                            onClick={() => navigate("/test-backend")}
-                            className="text-indigo-600 hover:bg-indigo-50"
-                        >
-                            Test Student Fetch
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            onClick={() => navigate("/test-teacher-db")}
-                            className="text-purple-600 hover:bg-purple-50"
-                        >
-                            Test Teacher DB Storage
-                        </Button>
-                    </div>
-                </div>
+
             </Card>
         </div>
     );

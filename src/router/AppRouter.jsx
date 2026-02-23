@@ -11,13 +11,13 @@ import { ForgotPassword } from '../pages/auth/ForgotPassword';
 import { ChangePassword } from '../pages/auth/ChangePassword';
 
 // Student Component
-import { StudentListDemo } from '../pages/student/StudentListDemo';
+
 import { StudentDashboard } from '../pages/student/StudentDashboard';
 import { StudentProfile } from '../pages/student/StudentProfile';
 import { WizardContainer } from '../pages/student/ProfileWizard/WizardContainer';
 
 // Teacher Components
-import { TeacherDBDemo } from '../pages/teacher/TeacherDBDemo';
+
 import { TeacherDashboard } from '../pages/teacher/TeacherDashboard';
 import { StudentList } from '../pages/teacher/StudentList';
 import { Analytics } from '../pages/teacher/Analytics';
@@ -46,8 +46,7 @@ export const AppRouter = () => {
     return (
         <Routes>
             {/* Public Routes */}
-            <Route path='/test-teacher-db' element={<TeacherDBDemo />} />
-            <Route path='/test-backend' element={<StudentListDemo />} />
+
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/teacher-login" element={<TeacherLogin />} />
