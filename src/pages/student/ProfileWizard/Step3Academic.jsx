@@ -4,9 +4,24 @@ import { Input } from '../../../components/ui/Input';
 export const Step3Academic = ({ data, onChange }) => {
     return (
         <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-                <Input label="Degree" name="course" value={data.course} onChange={onChange} placeholder="e.g. B.Sc" />
-                <Input label="Department" name="department" value={data.department} onChange={onChange} placeholder="e.g. Computer Science" />
+            <div className="grid gap-6 md:grid-cols-2 align-top">
+                <Input label="Degree" name="course" value="B.Sc" readOnly className="bg-gray-100 text-gray-500 cursor-not-allowed" />
+                <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <select
+                        name="department"
+                        value={data.department || ''}
+                        onChange={onChange}
+                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                        <option value="">Select Department</option>
+                        <option value="IT">IT</option>
+                        <option value="CS">CS</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Language">Language</option>
+                        <option value="Science">Science</option>
+                    </select>
+                </div>
 
                 <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
                     <div>

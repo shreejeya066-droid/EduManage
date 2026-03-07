@@ -26,7 +26,7 @@ export const WizardContainer = () => {
         // Step 2
         mobile: '', altMobile: '', email: '', address: '',
         // Step 3
-        course: '', department: '', section: '', rollNumber: user?.rollNumber || user?.username || '', yearOfJoining: '',
+        course: 'B.Sc', department: '', section: '', rollNumber: user?.rollNumber || user?.username || '', yearOfJoining: '',
         tenthPercent: '', twelfthPercent: '', cgpa: '', semester: '', backlogs: '0', diplomaPercent: '',
         sem1_cgpa: '', sem1_file: '',
         sem2_cgpa: '', sem2_file: '',
@@ -40,7 +40,7 @@ export const WizardContainer = () => {
         // Step 5
         sports: '', clubs: '', achievements: '', events: '', otherActivities: '', hobbies: [],
         // Step 6 (Career)
-        higherStudies: 'No', higherStudiesDetails: '', placementWillingness: 'Yes', interestedDomain: '', prefLocation: ''
+        higherStudies: '', higherStudiesDetails: '', placementWillingness: '', interestedDomain: '', prefLocation: ''
     });
 
     useEffect(() => {
@@ -56,6 +56,7 @@ export const WizardContainer = () => {
                         setFormData(prev => ({
                             ...prev,
                             ...data,
+                            course: 'B.Sc', // Forcing B.Sc since it is a static field now
                             // Ensure arrays/objects are handled if needed, usually direct spread works for simple fields
                             hobbies: Array.isArray(data.hobbies) ? data.hobbies : (data.hobbies ? [data.hobbies] : []),
                             // Ensure mapped fields are correct if backend names differ (e.g. mobile vs phone)
@@ -68,7 +69,7 @@ export const WizardContainer = () => {
                     const key = `student_profile_${user.username}`;
                     const saved = localStorage.getItem(key);
                     if (saved) {
-                        setFormData(prev => ({ ...prev, ...JSON.parse(saved) }));
+                        setFormData(prev => ({ ...prev, ...JSON.parse(saved), course: 'B.Sc' }));
                     }
                 }
             }
@@ -95,7 +96,7 @@ export const WizardContainer = () => {
             // Step 5
             hobbies,
             // Step 6
-            interestedDomain
+            interestedDomain, placementWillingness
         } = formData;
 
         switch (step) {
@@ -146,8 +147,16 @@ export const WizardContainer = () => {
                 }
                 return true;
             case 6: // Career
-                if (!interestedDomain) {
+                if (placementWillingness === 'No') {
+                    // No further validation needed
+                    return true;
+                }
+                if (placementWillingness === 'Yes' && !interestedDomain) {
                     alert("Please specify your Interested Domain.");
+                    return false;
+                }
+                if (!placementWillingness) {
+                    alert("Please select if you are willing to attend Placement Drives.");
                     return false;
                 }
                 return true;
