@@ -84,7 +84,7 @@ export const StudentDetailView = () => {
 
         // If it's a file, render a link
         if (isFile && typeof value === 'string') {
-            const fileUrl = `http://localhost:5000/uploads/${value}`;
+            const fileUrl = `https://student-backend-osum.onrender.com/uploads/${value}`;
             displayValue = (
                 <a
                     href={fileUrl}
@@ -232,7 +232,7 @@ const DetailSection = ({ title, icon, data, fields }) => {
                             <span className="font-medium text-gray-900 break-words">
                                 {isFile ? (
                                     <a
-                                        href={`http://localhost:5000/uploads/${val}`}
+                                        href={`https://student-backend-osum.onrender.com/uploads/${val}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"
