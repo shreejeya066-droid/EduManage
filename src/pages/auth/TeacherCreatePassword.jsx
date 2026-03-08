@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const TeacherCreatePassword = () => {
     const location = useLocation();
@@ -15,6 +16,8 @@ export const TeacherCreatePassword = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     useEffect(() => {
         // If we arrived here without state (direct link navigation), redirect back to login
@@ -69,20 +72,30 @@ export const TeacherCreatePassword = () => {
                     <div className="space-y-4">
                         <Input
                             label="New Password"
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             placeholder="Min 8 chars, 1 Upper, 1 Special"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             autoFocus
+                            suffix={
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
+                            }
                         />
                         <Input
                             label="Confirm Password"
-                            type="password"
+                            type={showConfirmPassword ? "text" : "password"}
                             placeholder="Re-enter password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
+                            suffix={
+                                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+                                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
+                            }
                         />
                     </div>
 
