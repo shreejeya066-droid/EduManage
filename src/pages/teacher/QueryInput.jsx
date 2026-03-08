@@ -36,10 +36,10 @@ export const QueryInput = () => {
                     <Sparkles className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-900 via-purple-800 to-indigo-900">
-                    Smart AI Student Search
+                    Smart Student Search
                 </h2>
                 <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-                    Type naturally to find exactly who you need. The AI understands complex queries.
+                    Type naturally to find exactly who you need.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 mt-4 text-sm">
                     <span className="px-3 py-1 bg-white border border-indigo-100 rounded-full text-indigo-600 shadow-sm animate-pulse-slow cursor-pointer hover:bg-indigo-50" onClick={() => setQuery("CSE students with CGPA above 8")}>"CSE students with CGPA above 8"</span>
