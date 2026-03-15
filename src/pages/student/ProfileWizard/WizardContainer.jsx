@@ -268,23 +268,26 @@ export const WizardContainer = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
-            <div className="max-w-3xl mx-auto space-y-6">
-                <div className="flex items-center justify-between mb-8 px-2">
+        <div className="min-h-screen bg-gray-50 py-4 px-2 sm:py-8 sm:px-4">
+            <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
+                {/* Mobile scrollable steps tracker */}
+                <div className="flex items-center justify-between mb-6 px-1 overflow-x-auto pb-2 gap-4 hide-scrollbar snap-x">
                     {Array.from({ length: totalSteps }).map((_, idx) => (
-                        <div key={idx} className="flex flex-col items-center">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${currentStep > idx + 1 ? 'bg-green-500 text-white' :
-                                currentStep === idx + 1 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'
+                        <div key={idx} className="flex flex-col items-center flex-shrink-0 snap-center min-w-[3rem]">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${currentStep > idx + 1 ? 'bg-green-500 text-white shadow-md' :
+                                currentStep === idx + 1 ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 shadow-md scale-110' : 'bg-gray-200 text-gray-500'
                                 }`}>
                                 {idx + 1}
                             </div>
-                            <span className="hidden sm:block text-xs mt-1 text-gray-500">Step {idx + 1}</span>
+                            <span className={`text-xs mt-2 text-center whitespace-nowrap transition-opacity duration-300 ${currentStep === idx + 1 ? 'text-indigo-700 font-semibold block' : 'text-gray-500 hidden sm:block'}`}>
+                                Step {idx + 1}
+                            </span>
                         </div>
                     ))}
                 </div>
 
-                <Card className="p-6">
-                    <div className="mb-6 border-b pb-4">
+                <Card className="p-4 sm:p-6 shadow-lg border-0 sm:border">
+                    <div className="mb-5 sm:mb-6 border-b pb-3 sm:pb-4">
                         <h2 className="text-xl font-bold text-gray-800">
                             {currentStep === 1 && "Personal Information"}
                             {currentStep === 2 && "Contact Details"}

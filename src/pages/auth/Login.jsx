@@ -50,6 +50,7 @@ export const Login = () => {
     };
 
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -192,11 +193,16 @@ export const Login = () => {
                     {isPasswordVisible && (
                         <Input
                             label="Password"
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             placeholder="Enter your password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             autoFocus
+                            suffix={
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
+                            }
                         />
                     )}
 

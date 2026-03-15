@@ -73,30 +73,30 @@ export const Step3Academic = ({ data, onChange }) => {
                 <h3 className="font-medium text-indigo-900 border-b border-indigo-200 pb-2">Semester-wise Performance</h3>
                 <p className="text-sm text-indigo-700 mb-2">Please enter GPA and upload marksheet for each completed semester.</p>
 
-                <div className="grid gap-4">
+                <div className="grid gap-3 sm:gap-4">
                     {[1, 2, 3, 4, 5, 6].map((sem) => (
-                        <div key={sem} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-white p-3 rounded-md shadow-sm">
-                            <div className="md:col-span-2 flex items-center h-10 font-semibold text-gray-700">
+                        <div key={sem} className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 items-start md:items-end bg-white p-3 sm:p-4 rounded-md shadow-sm border border-gray-100">
+                            <div className="md:col-span-2 flex items-center h-auto md:h-10 font-semibold text-gray-700 w-full mb-1 border-b md:border-b-0 pb-2 md:pb-0">
                                 Semester {sem}
                             </div>
-                            <div className="md:col-span-4">
+                            <div className="md:col-span-4 w-full">
                                 <Input
-                                    label="GPA / CGPA"
+                                    label={<span className="text-xs sm:text-sm">GPA / CGPA</span>}
                                     name={`sem${sem}_cgpa`}
                                     value={data[`sem${sem}_cgpa`] || ''}
                                     onChange={onChange}
                                     placeholder="Scale of 10"
-                                    className="h-9"
+                                    className="h-10 sm:h-9"
                                 />
                             </div>
-                            <div className="md:col-span-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Upload Marksheet</label>
+                            <div className="md:col-span-6 w-full mt-2 md:mt-0">
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Upload Marksheet</label>
                                 <Input
                                     type="file"
                                     name={`sem${sem}_file`}
                                     onChange={onChange}
                                     accept=".pdf,.jpg,.jpeg,.png"
-                                    className="text-xs file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 h-9 p-1"
+                                    className="w-full text-xs file:mr-2 file:py-1.5 sm:file:py-1 file:px-3 sm:file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 h-10 sm:h-9 p-1.5 sm:p-1"
                                 />
                             </div>
                         </div>
