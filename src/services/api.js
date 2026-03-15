@@ -27,6 +27,21 @@ export const fetchAnalytics = async () => {
 };
 
 // Student API Calls
+export const uploadDocument = async (file) => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/students/upload`, {
+            method: 'POST',
+            body: formData, // No Content-Type header needed, fetch sets it automatically with the boundary
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Upload failed');
+        return data.filename;
+    } catch (error) { throw error; }
+};
+
 export const loginStudent = async (credentials) => {
     try {
         const response = await fetch(`${API_BASE_URL}/students/login`, {

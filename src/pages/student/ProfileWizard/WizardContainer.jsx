@@ -19,6 +19,7 @@ export const WizardContainer = () => {
     const { user } = useAuth(); // Assuming useAuth imported above, need to add import
 
     const [currentStep, setCurrentStep] = useState(1);
+    const [filesToUpload, setFilesToUpload] = useState({});
     const [formData, setFormData] = useState({
         // Step 1
         firstName: '', lastName: '', fatherName: '', motherName: '',
@@ -184,42 +185,43 @@ export const WizardContainer = () => {
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
         if (type === 'file') {
-            const fileName = files && files[0] ? files[0].name : '';
-            setFormData(prev => ({ ...prev, [name]: fileName }));
+            if (files && files[0]) {
+                const file = files[0];
+                setFilesToUpload(prev => ({ ...prev, [name]: file }));
+                setFormData(prev => ({ ...prev, [name]: file.name })); // Use original filename for UI display and validation
+            }
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
 
-    const handleSubmit = async () => {
-        // console.log('Form Submitted:', formData);
-        const finalData = { ...formData, isProfileComplete: true, profile: formData }; // Wait, backend expects flat or nested? 
-        // studentModel has fields like firstName at top level but also some might be nested?
-        // Let's check studentModel. It has `profile: {}`?
-        // Wait, earlier view of `studentModel.js` was lines 1-42.
-        // It had `profile: { type: Object }` or similar? 
-        // I should check `studentModel` to be sure. 
-        // BUT `registerStudent` puts firstName/lastName at TOP level.
-        // `updateStudentProfile` (controller) uses `findOneAndUpdate({ rollNumber }, updates)`.
-        // So I should send a flat object if the schema is flat, or nested if schema is nested.
-        // Let's assume the controller can handle what we send.
-        // Given `registerStudent` logic, `firstName` is top level.
-        // Let's send `formData` merged with `isProfileComplete`.
-        // Ideally we should structure it to match the Schema.
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const handleSubmit = async () => {
+        setIsSubmitting(true);
         try {
-            const { updateStudentProfile } = await import('../../../services/api');
+            const { updateStudentProfile, uploadDocument } = await import('../../../services/api');
             // We need rollNumber.
             const rollNumber = user.rollNumber || user.username;
             if (!rollNumber) throw new Error("User ID missing");
 
-            // Mapping formData to expected backend structure if needed.
-            // For now, sending flat formData as updates. 
-            // IMPORTANT: Mongoose might ignore fields not in schema if strict: true.
-            // We'll trust the schema has these fields.
+            // Upload files first sequentially
+            const uploadedFileNames = {};
+            for (const [key, file] of Object.entries(filesToUpload)) {
+                try {
+                    const uniqueFilename = await uploadDocument(file);
+                    uploadedFileNames[key] = uniqueFilename;
+                } catch (err) {
+                    console.error(`Failed to upload ${key}`, err);
+                    throw new Error(`Failed to upload ${key}. Please try again.`);
+                }
+            }
+
+            // Create final data by replacing original filenames with the generated server ones
+            const finalFormData = { ...formData, ...uploadedFileNames };
 
             await updateStudentProfile(rollNumber, {
-                ...formData,
+                ...finalFormData,
                 isProfileComplete: true,
                 isLocked: true // Lock profile after update (requires Admin approval to unlock)
             });
@@ -248,6 +250,8 @@ export const WizardContainer = () => {
         } catch (error) {
             console.error(error);
             alert('Failed to update profile: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -304,8 +308,10 @@ export const WizardContainer = () => {
                         >
                             Back
                         </Button>
-                        <Button onClick={handleNext}>
-                            {currentStep === totalSteps ? 'Submit Profile' : 'Next Step'}
+                        <Button onClick={handleNext} disabled={isSubmitting}>
+                            {currentStep === totalSteps 
+                                ? (isSubmitting ? 'Submitting...' : 'Submit Profile') 
+                                : 'Next Step'}
                         </Button>
                     </div>
                 </Card>

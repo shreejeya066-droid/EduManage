@@ -87,7 +87,7 @@ export const StudentDetailView = () => {
 
         // If it's a file, render a link
         if (isFile && typeof value === 'string') {
-            const fileUrl = `${BASE_URL}/uploads/${value}`;
+            const fileUrl = value.startsWith('http') ? value : `${BASE_URL}/uploads/${value}`;
             displayValue = (
                 <a
                     href={fileUrl}
@@ -96,7 +96,7 @@ export const StudentDetailView = () => {
                     className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"
                 >
                     <FileText className="h-4 w-4" />
-                    View File ({value})
+                    View File
                 </a>
             );
         }
@@ -235,7 +235,7 @@ const DetailSection = ({ title, icon, data, fields }) => {
                             <span className="font-medium text-gray-900 break-words">
                                 {isFile ? (
                                     <a
-                                        href={`${BASE_URL}/uploads/${val}`}
+                                        href={val.toString().startsWith('http') ? val : `${BASE_URL}/uploads/${val}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"
