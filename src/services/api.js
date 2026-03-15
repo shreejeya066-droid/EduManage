@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://student-backend-osum.onrender.com/api';
+export const API_BASE_URL = 'https://student-backend-osum.onrender.com/api';
 
 export const fetchStudents = async () => {
     try {

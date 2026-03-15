@@ -4,6 +4,9 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { User, FileText, ArrowLeft, Shield, GraduationCap, Trophy, Briefcase, Code } from 'lucide-react';
+import { API_BASE_URL } from '../../services/api';
+
+const BASE_URL = API_BASE_URL.replace(/\/api$/, '');
 
 export const StudentDetailView = () => {
     const { id } = useParams(); // Start with username or ID
@@ -84,7 +87,7 @@ export const StudentDetailView = () => {
 
         // If it's a file, render a link
         if (isFile && typeof value === 'string') {
-            const fileUrl = `https://student-backend-osum.onrender.com/uploads/${value}`;
+            const fileUrl = `${BASE_URL}/uploads/${value}`;
             displayValue = (
                 <a
                     href={fileUrl}
@@ -232,7 +235,7 @@ const DetailSection = ({ title, icon, data, fields }) => {
                             <span className="font-medium text-gray-900 break-words">
                                 {isFile ? (
                                     <a
-                                        href={`https://student-backend-osum.onrender.com/uploads/${val}`}
+                                        href={`${BASE_URL}/uploads/${val}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline"
