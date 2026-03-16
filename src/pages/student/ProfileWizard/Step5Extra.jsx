@@ -54,13 +54,22 @@ export const Step5Extra = ({ data, onChange }) => {
                 placeholder="e.g. College Cricket Team, District Level Badminton"
             />
 
-            <Input
-                label="NSS / NCC / Clubs"
-                name="clubs"
-                value={data.clubs || ''}
-                onChange={onChange}
-                placeholder="e.g. NSS Volunteer, Robotics Club Member"
-            />
+            <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    NSS / NCC / Clubs
+                </label>
+                <select
+                    name="clubs"
+                    value={data.clubs || ''}
+                    onChange={onChange}
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                    <option value="" disabled>Select an option</option>
+                    <option value="NCC">NCC</option>
+                    <option value="NSS">NSS</option>
+                    <option value="NO">NO</option>
+                </select>
+            </div>
 
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Hobbies & Interests</label>
