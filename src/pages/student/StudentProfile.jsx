@@ -183,6 +183,7 @@ export const StudentProfile = () => {
                     <SectionToggle title="3. Academic Details">
                         <InfoRow label="Course" value={profileData.course} />
                         <InfoRow label="Department" value={profileData.department} />
+                        <InfoRow label="Section" value={profileData.section} />
                         <InfoRow label="Roll Number" value={profileData.rollNumber} />
                         <div className="mt-4 border-t pt-4">
                             <h4 className="font-semibold text-gray-700 mb-3">Semester Performance</h4>

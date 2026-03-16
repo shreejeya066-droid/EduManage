@@ -42,7 +42,19 @@ export const Step3Academic = ({ data, onChange }) => {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-                <Input label="Section" name="section" value={data.section} onChange={onChange} placeholder="e.g. A" />
+                <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                    <select
+                        name="section"
+                        value={data.section || ''}
+                        onChange={onChange}
+                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                        <option value="">Select Section</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                    </select>
+                </div>
                 <Input label="Roll Number" name="rollNumber" value={data.rollNumber} onChange={onChange} readOnly className="bg-gray-100 text-gray-500 cursor-not-allowed" />
 
                 <div className="space-y-1">

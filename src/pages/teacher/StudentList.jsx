@@ -84,10 +84,12 @@ export const StudentList = () => {
         };
 
         const yearStr = formatYear(year);
-        if (yearStr && dept) return `${yearStr} Year - ${dept}`;
-        if (yearStr) return `${yearStr} Year`;
-        if (dept) return dept;
-        return 'N/A';
+        const sectionStr = student.section ? ` - ${student.section}` : '';
+
+        if (yearStr && dept) return `${yearStr} Year - ${dept}${sectionStr}`;
+        if (yearStr) return `${yearStr} Year${sectionStr}`;
+        if (dept) return `${dept}${sectionStr}`;
+        return student.section || 'N/A';
     };
 
     return (

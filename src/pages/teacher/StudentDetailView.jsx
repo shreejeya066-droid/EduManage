@@ -166,7 +166,7 @@ export const StudentDetailView = () => {
                         icon={<GraduationCap className="h-4 w-4" />}
                         data={profileDetails}
                         fields={[
-                            'rollNumber', 'course', 'department', 'yearOfStudy', 'semester', 'yearOfJoining',
+                            'rollNumber', 'course', 'department', 'section', 'yearOfStudy', 'semester', 'yearOfJoining',
                             'tenthPercent', 'twelfthPercent', 'cgpa', 'backlogs',
                             'sem1_cgpa', 'sem1_file',
                             'sem2_cgpa', 'sem2_file',
