@@ -291,3 +291,30 @@ export const naturalLanguageQuery = async (queryText) => {
         return data;
     } catch (error) { throw error; }
 };
+
+// Password Recovery API Calls
+export const sendOTP = async (rollNumber) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/students/send-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rollNumber }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
+        return data;
+    } catch (error) { throw error; }
+};
+
+export const verifyOTP = async (credentials) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/students/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(credentials),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Verification failed');
+        return data;
+    } catch (error) { throw error; }
+};

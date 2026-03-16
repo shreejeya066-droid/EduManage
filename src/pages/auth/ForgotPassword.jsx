@@ -29,7 +29,7 @@ export const ForgotPassword = () => {
         return () => clearInterval(interval);
     }, [timer]);
 
-    const handleSendOTP = (e) => {
+    const handleSendOTP = async (e) => {
         e.preventDefault();
         setError('');
 
@@ -38,22 +38,19 @@ export const ForgotPassword = () => {
             return;
         }
 
-        // Check if user exists
-        const status = checkUserStatus(rollNumber);
-        if (!status.exists) {
-            setError('Account not found. Please check your roll number.');
-            return;
+        try {
+            const { sendOTP } = await import('../../services/api');
+            await sendOTP(rollNumber);
+            
+            setTimer(30);
+            setStep(2);
+            setSuccessMessage(`OTP sent to registered mobile number for ${rollNumber}`);
+        } catch (err) {
+            setError(err.message || 'Failed to send OTP. Please check your roll number.');
         }
-
-        // Mock sending OTP
-        setTimer(30);
-        setStep(2);
-        setSuccessMessage(`OTP sent to registered mobile number for ${rollNumber}`);
-        // In real app, trigger API
-        console.log("Mock OTP sent for", rollNumber);
     };
 
-    const handleVerifyOTP = (e) => {
+    const handleVerifyOTP = async (e) => {
         e.preventDefault();
         setError('');
 
@@ -62,12 +59,14 @@ export const ForgotPassword = () => {
             return;
         }
 
-        // Mock verification
-        if (otp === '1234') { // Mock OTP
+        try {
+            const { verifyOTP } = await import('../../services/api');
+            await verifyOTP({ rollNumber, otp });
+            
             setStep(3);
             setSuccessMessage('');
-        } else {
-            setError('Invalid OTP. Use 1234 for demo.');
+        } catch (err) {
+            setError(err.message || 'Invalid OTP. Please try again.');
         }
     };
 
