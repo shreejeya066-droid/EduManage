@@ -24,7 +24,14 @@ export const StudentList = () => {
 
     // --- Filters ---
     if (filterDept) {
-        students = students.filter(s => s.department === filterDept);
+        if (filterDept === 'CS') {
+            students = students.filter(s => s.department === 'CS' || s.department === 'CSE');
+        } else if (filterDept === 'Languages') {
+            const langDepts = ['LANGUAGES', 'ECE', 'EEE', 'MECH', 'CIVIL'];
+            students = students.filter(s => langDepts.includes(s.department?.toUpperCase()));
+        } else {
+            students = students.filter(s => s.department === filterDept);
+        }
     }
     if (filterYear) {
         // Strict match or loose match depending on data quality
@@ -123,11 +130,9 @@ export const StudentList = () => {
                             onChange={(e) => setFilterDept(e.target.value)}
                         >
                             <option value="">All Departments</option>
-                            <option value="CSE">CSE</option>
+                            <option value="CS">CS</option>
                             <option value="IT">IT</option>
-                            <option value="ECE">ECE</option>
-                            <option value="EEE">EEE</option>
-                            <option value="MECH">MECH</option>
+                            <option value="Languages">Languages</option>
                         </select>
                     </div>
 
@@ -142,7 +147,6 @@ export const StudentList = () => {
                             <option value="1">1st Year</option>
                             <option value="2">2nd Year</option>
                             <option value="3">3rd Year</option>
-                            <option value="4">4th Year</option>
                         </select>
                     </div>
 
