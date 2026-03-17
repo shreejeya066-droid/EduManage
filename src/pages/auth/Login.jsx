@@ -21,8 +21,19 @@ export const Login = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    const [isLoading, setIsLoading] = useState(false);
+    const [userType, setUserType] = useState(null); // 'student' or 'teacher'
+
     // Use Async Methods
-    const { loginStudentAsync, registerStudentAsync, checkUserStatus, login, allowedYears, loginTeacherAsync } = useAuth();
+    const { 
+        loginStudentAsync, 
+        registerStudentAsync, 
+        checkTeacherStatusAsync,
+        login, 
+        allowedYears, 
+        loginTeacherAsync,
+        setupTeacherPasswordAsync 
+    } = useAuth();
     const navigate = useNavigate();
 
     const validateRollNumber = (roll) => {
@@ -62,81 +73,102 @@ export const Login = () => {
         }
 
         const isStudentFormat = /^\d{2}[A-Z]+\d{1,3}$/.test(username);
+        setIsLoading(true);
 
-        // 1. If not password visible yet, we check status for students
-        if (!isPasswordVisible) {
-
-            // Validate Format if Student
-            if (isStudentFormat) {
-                const validation = validateRollNumber(username);
-                if (!validation.valid) {
-                    setError(validation.message);
-                    return;
-                }
-
-                // Check Status API
-                try {
-                    const status = await checkStudentStatus(username);
-                    // If New User OR No Password -> Go to Create Password
-                    if (!status.exists || !status.hasPassword) {
-                        setIsCreatePasswordOpen(true);
+        try {
+            // 1. Step 1: Check ID status if password is not yet visible
+            if (!isPasswordVisible) {
+                if (isStudentFormat) {
+                    const validation = validateRollNumber(username);
+                    if (!validation.valid) {
+                        setError(validation.message);
+                        setIsLoading(false);
                         return;
                     }
-                    // Else -> Show Password Field
-                    setIsPasswordVisible(true);
-                } catch (err) {
-                    setError('Failed to verify ID status. Please try again.');
-                    console.error(err);
-                }
-            } else {
-                // Admin / Teacher / Simple ID -> Just ask for password
-                setIsPasswordVisible(true);
-            }
-        } else {
-            // 2. Perform Login
-            if (!password) {
-                setError('Please enter your password.');
-                return;
-            }
 
-            if (isStudentFormat) {
-                const result = await loginStudentAsync(username, password);
-                if (result.success) {
-                    navigate('/student/dashboard');
+                    // Check Student Status API
+                    const status = await checkStudentStatus(username);
+                    setUserType('student');
+
+                    if (!status.exists || !status.hasPassword) {
+                        setIsCreatePasswordOpen(true);
+                    } else {
+                        setIsPasswordVisible(true);
+                    }
                 } else {
-                    setError(result.message || 'Invalid credentials');
+                    // Check Teacher Status API
+                    const status = await checkTeacherStatusAsync(username);
+                    
+                    if (status.exists) {
+                        setUserType('teacher');
+                        if (!status.hasPassword) {
+                            setIsCreatePasswordOpen(true);
+                        } else {
+                            setIsPasswordVisible(true);
+                        }
+                    } else {
+                        // Admin or unknown format - fallback to just asking for password
+                        // Or you can show error if you want strict checking
+                        setIsPasswordVisible(true);
+                    }
                 }
             } else {
-                // Admin / Teacher Login
-                let result = await login(username, password);
-                if (result.success) {
-                    navigate('/admin/dashboard');
+                // 2. Step 2: Perform actual Login
+                if (!password) {
+                    setError('Please enter your password.');
+                    setIsLoading(false);
                     return;
                 }
 
-                // Try Teacher
-                result = await loginTeacherAsync(username, password);
-                if (result.success) {
-                    navigate('/teacher/dashboard');
-                    return;
+                if (userType === 'student' || isStudentFormat) {
+                    const result = await loginStudentAsync(username, password);
+                    if (result.success) {
+                        navigate('/student/dashboard');
+                    } else {
+                        setError(result.message || 'Invalid credentials');
+                    }
+                } else if (userType === 'teacher') {
+                    const result = await loginTeacherAsync(username, password);
+                    if (result.success) {
+                        if (result.isFirstLogin) {
+                            setIsCreatePasswordOpen(true);
+                        } else if (result.isProfileComplete === false) {
+                            navigate('/teacher/profile-setup');
+                        } else {
+                            navigate('/teacher/dashboard');
+                        }
+                    } else {
+                        setError(result.message || 'Invalid credentials');
+                    }
+                } else {
+                    // Default Admin login
+                    const result = await login(username, password);
+                    if (result.success) {
+                        navigate('/admin/dashboard');
+                    } else {
+                        setError('Invalid credentials');
+                    }
                 }
-
-                setError('Invalid credentials');
             }
+        } catch (err) {
+            console.error("Login Error:", err);
+            setError('An error occurred. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleCreatePassword = async () => {
         setCreatePwdError(null);
-        // Regex: At least 1 Uppercase, 1 Digit, 1 Special Char, and Max 8 characters
-        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{1,8}$/;
+        // Regex: At least 1 Uppercase, 1 Digit, 1 Special Char, and Min 8 characters
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,16}$/;
 
         if (!newPassword || !confirmPassword) {
             setCreatePwdError('Please fill all fields.');
             return;
         }
-        if (newPassword.length > 8) {
-            setCreatePwdError('Password must be 8 characters or less.');
+        if (newPassword.length < 8) {
+            setCreatePwdError('Password must be at least 8 characters.');
             return;
         }
         if (!passwordRegex.test(newPassword)) {
@@ -148,13 +180,29 @@ export const Login = () => {
             return;
         }
 
-        // Register Student in DB
-        const result = await registerStudentAsync(username, newPassword);
-        if (result.success) {
-            setIsCreatePasswordOpen(false);
-            navigate('/student/dashboard');
-        } else {
-            setCreatePwdError('Failed to create password: ' + result.message);
+        setIsLoading(true);
+        try {
+            let result;
+            if (userType === 'student' || /^\d{2}[A-Z]+\d{1,3}$/.test(username)) {
+                result = await registerStudentAsync(username, newPassword);
+            } else {
+                result = await setupTeacherPasswordAsync(username, newPassword);
+            }
+
+            if (result.success) {
+                setIsCreatePasswordOpen(false);
+                if (userType === 'teacher') {
+                    navigate('/teacher/profile-setup');
+                } else {
+                    navigate('/student/dashboard');
+                }
+            } else {
+                setCreatePwdError('Failed to create password: ' + result.message);
+            }
+        } catch (err) {
+            setCreatePwdError('An error occurred while setting password.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -162,7 +210,7 @@ export const Login = () => {
         setIsPasswordVisible(false);
         setPassword('');
         setError(null);
-        // Ensure new password modals are closed
+        setUserType(null);
         setIsCreatePasswordOpen(false);
     };
 
@@ -220,7 +268,7 @@ export const Login = () => {
                         </div>
                     )}
 
-                    <Button type="submit" className="w-full" size="lg">
+                    <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
                         {isPasswordVisible ? 'Login' : 'Next'}
                     </Button>
                 </form>
@@ -237,7 +285,7 @@ export const Login = () => {
                     onClose={() => setIsCreatePasswordOpen(false)}
                     title="Setup Your Password"
                     footer={
-                        <Button onClick={handleCreatePassword} className="w-full sm:w-auto">
+                        <Button onClick={handleCreatePassword} className="w-full sm:w-auto" isLoading={isLoading}>
                             Save Password
                         </Button>
                     }

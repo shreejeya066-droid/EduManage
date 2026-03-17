@@ -138,6 +138,18 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // 2b. Teacher/Staff Status Check
+    const checkTeacherStatusAsync = async (username) => {
+        try {
+            const { checkTeacherStatus } = await import('../services/api');
+            const status = await checkTeacherStatus(username);
+            return status; // { exists, hasPassword, isFirstLogin }
+        } catch (error) {
+            console.error("Status check failed", error);
+            return { exists: false, error: error.message };
+        }
+    };
+
     // 3. Update Student Profile
     const updateStudentProfileAsync = async (profileData) => {
         if (!user || !user.rollNumber) return { success: false, message: 'No student logged in' };
@@ -277,6 +289,7 @@ export const AuthProvider = ({ children }) => {
             // Async (DB) Student
             loginStudentAsync, registerStudentAsync, updateStudentProfileAsync,
             // Async (DB) Teacher
+            checkTeacherStatusAsync,
             registerTeacherAsync, loginTeacherAsync, setupTeacherPasswordAsync: async (username, password) => {
                 try {
                     const { setupTeacherPassword } = await import('../services/api');

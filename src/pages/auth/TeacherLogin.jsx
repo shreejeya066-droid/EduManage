@@ -16,8 +16,9 @@ export const TeacherLogin = () => {
     const [error, setError] = useState(null);
 
     // Auth
-    const { login, checkUserStatus, loginTeacherAsync } = useAuth();
+    const { login, checkUserStatus, loginTeacherAsync, checkTeacherStatusAsync } = useAuth();
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleCheckId = async (e) => {
         e.preventDefault();
@@ -28,9 +29,9 @@ export const TeacherLogin = () => {
             return;
         }
 
+        setIsLoading(true);
         try {
-            const { checkTeacherStatus } = await import('../../services/api');
-            const status = await checkTeacherStatus(username);
+            const status = await checkTeacherStatusAsync(username);
 
             if (!status.exists) {
                 setError('Teacher ID not found. Please contact the Admin.');
@@ -47,8 +48,9 @@ export const TeacherLogin = () => {
 
         } catch (err) {
             console.error(err);
-            // setError('Failed to check status. Using fallback login.'); // Suppressed to avoid confusing user
-            setStep('password'); // Fallback to try login anyway
+            setStep('password'); // Fallback
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -61,21 +63,26 @@ export const TeacherLogin = () => {
             return;
         }
 
-        // Try DB Login (Async)
-        // We pass username as 'email' parameter since controller now accepts both in that field
-        const result = await loginTeacherAsync(username, password);
+        setIsLoading(true);
+        try {
+            // Try DB Login (Async)
+            // We pass username as 'email' parameter since controller now accepts both in that field
+            const result = await loginTeacherAsync(username, password);
 
-        if (result.success) {
-            if (result.isFirstLogin) {
-                navigate('/teacher/create-password', { state: { username: username } });
-            } else if (result.isProfileComplete === false) {
-                // Force profile completion if not first login but profile incomplete (e.g. skipped or old data)
-                navigate('/teacher/profile-setup');
+            if (result.success) {
+                if (result.isFirstLogin) {
+                    navigate('/teacher/create-password', { state: { username: username } });
+                } else if (result.isProfileComplete === false) {
+                    // Force profile completion if not first login but profile incomplete (e.g. skipped or old data)
+                    navigate('/teacher/profile-setup');
+                } else {
+                    navigate('/teacher/dashboard');
+                }
             } else {
-                navigate('/teacher/dashboard');
+                setError('Login Failed: ' + (result.message || 'Invalid credentials'));
             }
-        } else {
-            setError('Login Failed: ' + (result.message || 'Invalid credentials'));
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -112,7 +119,7 @@ export const TeacherLogin = () => {
                                 </div>
                             )}
 
-                            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" size="lg">
+                            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" size="lg" isLoading={isLoading}>
                                 Next
                             </Button>
                         </form>
@@ -161,7 +168,7 @@ export const TeacherLogin = () => {
                             </div>
                         )}
 
-                        <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" size="lg">
+                        <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" size="lg" isLoading={isLoading}>
                             Sign In
                         </Button>
                     </form>
