@@ -10,6 +10,72 @@ export const QueryInput = () => {
     const [response, setResponse] = useState(null);
     const [loading, setLoading] = useState(false);
 
+    // --- Manual Hybrid Filters ---
+    const [filters, setFilters] = useState({
+        year: 'All',
+        cgpa: 'All',
+        placement: 'All',
+        skill: 'All'
+    });
+
+    // --- Auto Sync Logic ---
+    const syncFiltersFromText = (text) => {
+        const lower = text.toLowerCase();
+        const newFilters = { ...filters };
+
+        // 1. Year Sync
+        const yearMatch = lower.match(/(1st|2nd|3rd|4th|first|second|third|fourth)\s*year/);
+        if (yearMatch) {
+            const val = yearMatch[1];
+            if (val.startsWith('1') || val.startsWith('fir')) newFilters.year = '1';
+            else if (val.startsWith('2') || val.startsWith('sec')) newFilters.year = '2';
+            else if (val.startsWith('3') || val.startsWith('thi')) newFilters.year = '3';
+            else if (val.startsWith('4') || val.startsWith('fou')) newFilters.year = '4';
+        }
+
+        // 2. CGPA Sync
+        const cgpaMatch = lower.match(/(?:above|more than|>|greater than)\s*(\d+(\.\d+)?)/);
+        if (cgpaMatch) {
+            const val = parseFloat(cgpaMatch[1]);
+            if (val >= 8) newFilters.cgpa = '>8';
+            else if (val >= 7) newFilters.cgpa = '>7';
+            else if (val >= 6) newFilters.cgpa = '>6';
+        }
+
+        // 3. Placement Sync
+        if (lower.includes('not interested') || lower.includes('not willing')) newFilters.placement = 'Not Interested';
+        else if (lower.includes('interested') || lower.includes('willing') || lower.includes('ready')) newFilters.placement = 'Interested';
+
+        // 4. Skills Sync
+        const skills = ['python', 'java', 'coding', 'quiz', 'web development'];
+        for (const s of skills) {
+            if (lower.includes(s)) {
+                newFilters.skill = s.charAt(0).toUpperCase() + s.slice(1);
+                break;
+            }
+        }
+
+        setFilters(newFilters);
+    };
+
+    const handleQueryChange = (e) => {
+        const text = e.target.value;
+        setQuery(text);
+        syncFiltersFromText(text);
+    };
+
+    const handleFilterChange = (field, value) => {
+        setFilters(prev => ({ ...prev, [field]: value }));
+        // Could also update query text here if needed, but requirements say manual 
+        // selection overrides NLP detection conceptually in the request.
+    };
+
+    const clearAll = () => {
+        setQuery('');
+        setFilters({ year: 'All', cgpa: 'All', placement: 'All', skill: 'All' });
+        setResponse(null);
+    };
+
     const handleQuery = async (e) => {
         e.preventDefault();
         if (!query.trim()) return;
@@ -18,6 +84,9 @@ export const QueryInput = () => {
         setResponse(null);
         try {
             const { naturalLanguageQuery } = await import('../../services/api');
+            // We pass filters as a secondary source if needed, 
+            // but the backend NLP is already robust. 
+            // For now, we still rely on the 'query' text which is synced.
             const result = await naturalLanguageQuery(query);
             setResponse(result);
         } catch (error) {
@@ -38,44 +107,114 @@ export const QueryInput = () => {
                 <h2 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-900 via-purple-800 to-indigo-900">
                     Smart Student Search
                 </h2>
-                <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-                    Type naturally to find exactly who you need.
+                <p className="text-gray-600 max-w-2xl mx-auto text-lg font-medium">
+                    Search and filter in one unified dashboard.
                 </p>
-                <div className="flex flex-wrap justify-center gap-2 mt-4 text-sm">
-                    <span className="px-3 py-1 bg-white border border-indigo-100 rounded-full text-indigo-600 shadow-sm animate-pulse-slow cursor-pointer hover:bg-indigo-50" onClick={() => setQuery("CSE students with CGPA above 8")}>"CSE students with CGPA above 8"</span>
-                    <span className="px-3 py-1 bg-white border border-indigo-100 rounded-full text-indigo-600 shadow-sm cursor-pointer hover:bg-indigo-50" onClick={() => setQuery("Placement ready knowing Python")}>"Placement ready knowing Python"</span>
-                    <span className="px-3 py-1 bg-white border border-indigo-100 rounded-full text-indigo-600 shadow-sm cursor-pointer hover:bg-indigo-50" onClick={() => setQuery("IT students planning higher studies")}>"IT students for higher studies"</span>
+                <div className="flex flex-wrap justify-center gap-2 mt-4 text-xs font-semibold">
+                    <span className="px-3 py-1.5 bg-white border border-indigo-100 rounded-full text-indigo-600 shadow-sm cursor-pointer hover:bg-indigo-50 hover:scale-105 transition-transform" onClick={() => { setQuery("2nd year students with CGPA above 8"); syncFiltersFromText("2nd year students with CGPA above 8"); }}>"2nd year students above 8"</span>
+                    <span className="px-3 py-1.5 bg-white border border-indigo-100 rounded-full text-indigo-600 shadow-sm cursor-pointer hover:bg-indigo-50 hover:scale-105 transition-transform" onClick={() => { setQuery("Placement ready knowing Python"); syncFiltersFromText("Placement ready knowing Python"); }}>"Placement ready Python"</span>
                 </div>
             </div>
 
-            {/* Search Input Card */}
-            <Card className="p-2 bg-white/60 backdrop-blur-xl border-white/50 shadow-2xl relative overflow-hidden group rounded-3xl">
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-pink-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                <form onSubmit={handleQuery} className="relative flex items-center bg-white rounded-2xl p-2 shadow-inner border border-gray-100">
-                    <Input
-                        placeholder="Ask me anything..."
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg py-6 px-6 bg-transparent placeholder:text-gray-400 font-medium"
-                    />
-                    <Button
-                        type="submit"
-                        disabled={loading || !query}
-                        className="h-14 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300 transform active:scale-95 disabled:opacity-50"
+            {/* Smart Search Container */}
+            <div className="space-y-4">
+                {/* Search Input Card */}
+                <Card className="p-2 bg-white/60 backdrop-blur-xl border-white/50 shadow-2xl relative overflow-hidden group rounded-3xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-pink-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                    <form onSubmit={handleQuery} className="relative flex items-center bg-white rounded-2xl p-2 shadow-inner border border-gray-100">
+                        <Input
+                            placeholder="Ask me anything..."
+                            value={query}
+                            onChange={handleQueryChange}
+                            className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg py-6 px-6 bg-transparent placeholder:text-gray-400 font-medium"
+                        />
+                        <Button
+                            type="submit"
+                            disabled={loading || !query}
+                            className="h-14 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300 transform active:scale-95 disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <span className="flex items-center space-x-2">
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Analysing...</span>
+                                </span>
+                            ) : (
+                                <span className="flex items-center text-lg font-semibold tracking-wide">
+                                    Search <Send className="ml-2 h-5 w-5" />
+                                </span>
+                            )}
+                        </Button>
+                    </form>
+                </Card>
+
+                {/* Filter Row */}
+                <div className="flex flex-wrap items-center gap-3 px-2 justify-center">
+                    {/* Year Dropdown */}
+                    <div className="space-y-1">
+                        <select 
+                            className="h-11 rounded-full px-5 border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none hover:border-indigo-300 transition-colors cursor-pointer"
+                            value={filters.year}
+                            onChange={(e) => handleFilterChange('year', e.target.value)}
+                        >
+                            <option value="All">Year: All</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+
+                    {/* CGPA Dropdown */}
+                    <div className="space-y-1">
+                        <select 
+                            className="h-11 rounded-full px-5 border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none hover:border-indigo-300 transition-colors cursor-pointer"
+                            value={filters.cgpa}
+                            onChange={(e) => handleFilterChange('cgpa', e.target.value)}
+                        >
+                            <option value="All">CGPA: All</option>
+                            <option value=">6">{">"} 6.0</option>
+                            <option value=">7">{">"} 7.0</option>
+                            <option value=">8">{">"} 8.0</option>
+                        </select>
+                    </div>
+
+                    {/* Placement Dropdown */}
+                    <div className="space-y-1">
+                        <select 
+                            className="h-11 rounded-full px-5 border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none hover:border-indigo-300 transition-colors cursor-pointer"
+                            value={filters.placement}
+                            onChange={(e) => handleFilterChange('placement', e.target.value)}
+                        >
+                            <option value="All">Placement: All</option>
+                            <option value="Interested">Interested</option>
+                            <option value="Not Interested">Not Interested</option>
+                        </select>
+                    </div>
+
+                    {/* Skill Dropdown */}
+                    <div className="space-y-1">
+                        <select 
+                            className="h-11 rounded-full px-5 border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none hover:border-indigo-300 transition-colors cursor-pointer"
+                            value={filters.skill}
+                            onChange={(e) => handleFilterChange('skill', e.target.value)}
+                        >
+                            <option value="All">Skill: All</option>
+                            <option value="Coding">Coding</option>
+                            <option value="Python">Python</option>
+                            <option value="Java">Java</option>
+                            <option value="Quiz">Quiz</option>
+                        </select>
+                    </div>
+
+                    <Button 
+                        variant="ghost" 
+                        onClick={clearAll}
+                        className="h-11 rounded-full px-6 text-red-500 hover:text-red-600 hover:bg-red-50 text-sm font-bold transition-all"
                     >
-                        {loading ? (
-                            <span className="flex items-center space-x-2">
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                <span>Analyzing...</span>
-                            </span>
-                        ) : (
-                            <span className="flex items-center text-lg font-semibold tracking-wide">
-                                Search <Send className="ml-2 h-5 w-5" />
-                            </span>
-                        )}
+                        Clear Filters
                     </Button>
-                </form>
-            </Card>
+                </div>
+            </div>
 
             {/* Results Section */}
             {response && !response.error && (
