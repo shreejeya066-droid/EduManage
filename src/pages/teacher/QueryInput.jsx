@@ -76,25 +76,54 @@ export const QueryInput = () => {
         setResponse(null);
     };
 
-    const handleQuery = async (e) => {
-        e.preventDefault();
-        if (!query.trim()) return;
+    // --- Core Search Logic (The Trigger) ---
+    const executeSmartSearch = async (currentQuery, currentFilters) => {
+        let finalQuery = currentQuery.trim();
+
+        // If search box is empty, build a query from the dropdowns
+        if (!finalQuery) {
+            const parts = [];
+            if (currentFilters.year !== 'All') parts.push(`${currentFilters.year} year`);
+            if (currentFilters.cgpa !== 'All') {
+                const cgpaVal = currentFilters.cgpa.replace('>', '');
+                parts.push(`cgpa above ${cgpaVal}`);
+            }
+            if (currentFilters.placement !== 'All') parts.push(`${currentFilters.placement} placement`);
+            if (currentFilters.skill !== 'All') parts.push(currentFilters.skill);
+            
+            finalQuery = parts.join(' ');
+        }
+
+        if (!finalQuery) {
+            setResponse(null);
+            return;
+        }
 
         setLoading(true);
-        setResponse(null);
         try {
             const { naturalLanguageQuery } = await import('../../services/api');
-            // We pass filters as a secondary source if needed, 
-            // but the backend NLP is already robust. 
-            // For now, we still rely on the 'query' text which is synced.
-            const result = await naturalLanguageQuery(query);
+            const result = await naturalLanguageQuery(finalQuery);
             setResponse(result);
         } catch (error) {
             console.error("Query failed", error);
-            setResponse({ error: true, message: "Server error processing query. Please try again later." });
+            setResponse({ error: true, message: "Search update failed." });
         } finally {
             setLoading(false);
         }
+    };
+
+    // --- Debounced Auto-Trigger ---
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            executeSmartSearch(query, filters);
+        }, 600); // 600ms debounce for typing
+
+        return () => clearTimeout(timer);
+    }, [query, filters]);
+
+    const handleQuery = (e) => {
+        e.preventDefault();
+        executeSmartSearch(query, filters);
     };
 
     return (
