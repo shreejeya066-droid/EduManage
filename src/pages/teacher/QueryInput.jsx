@@ -159,13 +159,13 @@ export const QueryInput = () => {
                         />
                         <Button
                             type="submit"
-                            disabled={loading || !query}
+                            disabled={loading}
                             className="h-14 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300 transform active:scale-95 disabled:opacity-50"
                         >
                             {loading ? (
                                 <span className="flex items-center space-x-2">
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    <span>Analysing...</span>
+                                    <span>Searching...</span>
                                 </span>
                             ) : (
                                 <span className="flex items-center text-lg font-semibold tracking-wide">
@@ -201,9 +201,9 @@ export const QueryInput = () => {
                             onChange={(e) => handleFilterChange('cgpa', e.target.value)}
                         >
                             <option value="All">CGPA: All</option>
-                            <option value=">6">{">"} 6.0</option>
-                            <option value=">7">{">"} 7.0</option>
-                            <option value=">8">{">"} 8.0</option>
+                            <option value=">6">CGPA above 6</option>
+                            <option value=">7">CGPA above 7</option>
+                            <option value=">8">CGPA above 8</option>
                         </select>
                     </div>
 
@@ -215,8 +215,8 @@ export const QueryInput = () => {
                             onChange={(e) => handleFilterChange('placement', e.target.value)}
                         >
                             <option value="All">Placement: All</option>
-                            <option value="Interested">Interested</option>
-                            <option value="Not Interested">Not Interested</option>
+                            <option value="Interested">Interested in placement</option>
+                            <option value="Not Interested">Not interested in placement</option>
                         </select>
                     </div>
 
@@ -228,10 +228,10 @@ export const QueryInput = () => {
                             onChange={(e) => handleFilterChange('skill', e.target.value)}
                         >
                             <option value="All">Skill: All</option>
-                            <option value="Coding">Coding</option>
-                            <option value="Python">Python</option>
-                            <option value="Java">Java</option>
-                            <option value="Quiz">Quiz</option>
+                            <option value="Coding">Coding Skill</option>
+                            <option value="Python">Python Expert</option>
+                            <option value="Java">Java Expert</option>
+                            <option value="Quiz">Quiz Participation</option>
                         </select>
                     </div>
 
@@ -246,7 +246,16 @@ export const QueryInput = () => {
             </div>
 
             {/* Results Section */}
-            {response && !response.error && (
+            {loading && (
+                <div className="flex flex-col items-center justify-center p-20 space-y-4 animate-pulse">
+                    <div className="p-4 bg-indigo-50 rounded-2xl">
+                        <Sparkles className="h-10 w-10 text-indigo-400 animate-bounce" />
+                    </div>
+                    <p className="text-gray-500 font-bold text-lg">Finding the best matches...</p>
+                </div>
+            )}
+
+            {!loading && response && !response.error && (
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out">
                     <div className="flex items-center justify-between mb-6 px-2">
                         <div className="flex items-center gap-4">
