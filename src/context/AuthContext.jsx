@@ -267,7 +267,21 @@ export const AuthProvider = ({ children }) => {
     const sendOTP = () => { };
     const verifyOTP = () => { };
     const resetPassword = () => { };
-    const deleteUser = () => { };
+    const deleteUser = async (identifier, role = 'student') => {
+        try {
+            const { deleteStudent, deleteTeacher } = await import('../services/api');
+            if (role === 'student') {
+                await deleteStudent(identifier);
+            } else {
+                await deleteTeacher(identifier);
+            }
+            await fetchAllUsers(); // Refresh the list
+            return { success: true };
+        } catch (error) {
+            console.error("Failed to delete user", error);
+            return { success: false, message: error.message };
+        }
+    };
     const getPendingRequest = () => { };
 
     // Admin Password Change Mock (for Profile)

@@ -4,11 +4,11 @@ import { Table, TableRow, TableCell } from '../../components/ui/Table';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const StudentList = () => {
-    const { getAllUsers, refreshUsers } = useAuth();
+    const { user, getAllUsers, refreshUsers, deleteUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDept, setFilterDept] = useState('');
     const [filterYear, setFilterYear] = useState('');
@@ -99,6 +99,21 @@ export const StudentList = () => {
         return student.section || 'N/A';
     };
 
+    const handleDelete = async (student) => {
+        if (window.confirm(`Are you sure you want to delete ${student.name || student.username}?`)) {
+            try {
+                const result = await deleteUser(student.username, 'student');
+                if (result.success) {
+                    alert('Student deleted successfully');
+                } else {
+                    alert('Failed to delete student: ' + result.message);
+                }
+            } catch (error) {
+                alert('An error occurred during deletion');
+            }
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -181,11 +196,23 @@ export const StudentList = () => {
                                 <TableCell className="font-medium text-gray-900">{student.name || 'Unknown Name'}</TableCell>
                                 <TableCell>{getStudentYearSection(student)}</TableCell>
                                 <TableCell>
-                                    <Link to={`/teacher/students/${student.username}`}>
-                                        <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50">
-                                            View Profile
-                                        </Button>
-                                    </Link>
+                                    <div className="flex items-center gap-2">
+                                        <Link to={`/teacher/students/${student.username}`}>
+                                            <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50">
+                                                View Profile
+                                            </Button>
+                                        </Link>
+                                        {user?.role === 'admin' && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleDelete(student)}
+                                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))
